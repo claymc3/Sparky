@@ -90,11 +90,11 @@ class read_cyana_peaks_dialog(tkutil.Dialog, tkutil.Stoppable):
 		progress_label.pack(side = 'top', anchor = 'w')
 
 		br = tkutil.button_row(self.top,
-				 ('Create peaks', self.read_cb),
-				 ('Stop', self.stop_cb),
-				 ('Close', self.close_cb),
-				 ('Help', sputil.help_cb(session, 'ReadPeaks')),
-				 )
+				('Create peaks', self.read_cb),
+				('Stop', self.stop_cb),
+				('Close', self.close_cb),
+				('Help', sputil.help_cb(session, 'ReadPeaks')),
+				)
 		br.frame.pack(side = 'top', anchor = 'w')
 
 		tkutil.Stoppable.__init__(self, progress_label, br.buttons[1])
@@ -115,10 +115,9 @@ class read_cyana_peaks_dialog(tkutil.Dialog, tkutil.Stoppable):
 		order = self.order.get()
 		self.order.get()
 		if fin and seq_dict and spectrum:
-			 self.stoppable_call(self.read_peaks, fin, fprot, seq_dict, fupl, fovw, calc, spectrum, order)
-			 message = ('Transfered %d peaks' % (self.count))
-			 self.progress_report(message)
-
+			self.stoppable_call(self.read_peaks, fin, fprot, seq_dict, fupl, fovw, calc, spectrum, order)
+			message = ('Transfered %d peaks\n Last run %s' % (self.count, self.time))
+			self.progress_report(message)
 
 	# ---------------------------------------------------------------------------
 	#
@@ -162,7 +161,9 @@ class read_cyana_peaks_dialog(tkutil.Dialog, tkutil.Stoppable):
 		for (assignment, frequency, note, pcolor, lcolor) in CYANAplist:
 			self.count = self.count +1 
 			self.create_peak(assignment, frequency, note, pcolor, lcolor, cyaspectrum)
-		tkMessageBox.showinfo('Task Complete', "Finished Reading in CYANA results")
+		import datetime as time
+		self.time = time.datetime.now().strftime("%m-%d-%y %H:%M")
+
 	# ---------------------------------------------------------------------------
 	#
 	def get_dist(self, calc, fupl, fin):
@@ -191,8 +192,6 @@ class read_cyana_peaks_dialog(tkutil.Dialog, tkutil.Stoppable):
 					viols[pkn] = 'viol ' + viol[40:44] + '+' + viol[58:62]
 		return viols
 
-
-
 	def cyana_peak_list(self, fin, fprot, seq_dict, spectrum, dist, viols, order):
 
 		# >>>> Open Cyana Peak list file remove any commented out lines and blank lines <<<<
@@ -205,17 +204,6 @@ class read_cyana_peaks_dialog(tkutil.Dialog, tkutil.Stoppable):
 		# translate CYANA numerical code to sparky group-atom, and indicate which 
 		# chain the residue is in
 
-		# seqlines = [line.strip() for line in open(fseq).readlines() if line.strip() and line[0] != "#"]
-		# seq_dict = {} #key = index, value = group
-		# for x in range(len(seqlines)):
-		#   res = seqlines[x].split()
-		#   if len(res) == 2: 
-		#     ix = int(res[1])
-		#     seq_dict[res[1]]=AAA_dict[res[0]] + res[1]
-		#   if len(res) == 1:
-		#     index = ix + x
-		#     seq_dict[str(index)]=AAA_dict[res[0]] + str(index)
-
 		cyntrans = {} #key = cyana #code; value = [sparky group-atom, chain]
 		for line in protlines:
 			cyntrans[line.split()[0]]= seq_dict[line.split()[4]] + line.split()[3]
@@ -224,6 +212,9 @@ class read_cyana_peaks_dialog(tkutil.Dialog, tkutil.Stoppable):
 		# Fill in missing information for ambiguous assignments and create peak entries
 		# -----------------------------------------------------------------------------
 		stype = str(str(spectrum.dimension)+'D')
+		pldim = int(open(fin).readline()[-2])
+		print pldim
+
 		peakslist = []
 		for i in range(len(cyplines)):
 			if stype == '2D' and len(cyplines[i].split()) >= 10:## Unambiguous/Unassigned 2D

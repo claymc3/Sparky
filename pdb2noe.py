@@ -196,10 +196,16 @@ class assignment_distance_dialog(tkutil.Dialog, tkutil.Stoppable):
 		ha.button.pack(side = 'top', anchor = 'w')
 		self.heavyatoms = ha
 
+		progress_label = Tkinter.Label(self.top, anchor = 'nw')
+		progress_label.pack(side = 'top', anchor = 'w',padx=2)
+
 		br = tkutil.button_row(self.top,
-								('Generate peaklist', self.Generate_NOESY_cb),
-								('Close', self.close_cb))
+								('Generate peaklist', self.Generate_NOESY),
+								('Close', self.close_cb),
+								('Stop', self.stop_cb))
 		br.frame.pack(side = 'top', anchor = 'w')
+
+		tkutil.Stoppable.__init__(self, progress_label, br.buttons[2])
 
 	# ------------------------------------------------------------------------------
 	#
@@ -258,6 +264,15 @@ class assignment_distance_dialog(tkutil.Dialog, tkutil.Stoppable):
 		settings.mnum = self.model_number.get()
 		settings.heavyatoms = self.heavyatoms.state()
 		return settings
+
+	# ------------------------------------------------------------------------------
+	# 
+	def Generate_NOESY(self):
+		s = self.get_settings()
+		self.stoppable_call(self.Generate_NOESY_cb)
+		message = ('Created %d new cross peaks\nLast run %s' % (self.count, self.time))
+		self.progress_report(message)
+
 
 	# ------------------------------------------------------------------------------
 	# 
@@ -375,7 +390,12 @@ class assignment_distance_dialog(tkutil.Dialog, tkutil.Stoppable):
 			peak.color = "white"
 			if label.color == "cyan":
 				peak.color = "cyan"
-		tkMessageBox.showinfo('Task Complete', "Finished Simulating NOESY")
+		import datetime as time
+		self.count = len(noe_peak_list)
+		self.time = time.datetime.now().strftime("%m-%d-%y %H:%M")
+		message = ('Created %d new cross peaks\nLast run %s' % (self.count, self.time))
+		self.progress_report(message)
+
 	# ------------------------------------------------------------------------------
 	# return atoms_list entry containing expansion of pseudo atoms for entries 
 	# found in the PDB 

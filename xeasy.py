@@ -18,9 +18,9 @@ import tkutil
 # St Jude Children's Research Hospital 
 # Department of Structural Biology Memphis, TN 
 #
-# Last updates: July 7, 2022
+# Last updates: September 13, 2022
 #
-# Update added the ability of filter the resonances list to detect entries that have
+# Update added the ability of filter the resonances list to detect entries that are
 #   Not in sequence 
 #   Incorrect atoms name
 #   High standard deviation indicating miss assignment 
@@ -108,7 +108,7 @@ class xeasy_format_dialog(tkutil.Dialog, tkutil.Stoppable):
     nb.button.pack(side = 'top', anchor = 'w')
     self.note = nb
 
-    ri = tkutil.checkbutton(self.top, 'Add 10000 to peak index', 0)
+    ri = tkutil.checkbutton(self.top, 'Add 10000 to assigned peak index', 0)
     ri.button.pack(side = 'top', anchor = 'w')
     self.reindex = ri
 
@@ -117,7 +117,7 @@ class xeasy_format_dialog(tkutil.Dialog, tkutil.Stoppable):
     ef = tkutil.entry_field(self.top, '  ', width = 30)
     ef.frame.pack(side = 'top', anchor = 'w')
     self.note_words = ef
-    et = Tkinter.Label(self.top, text = '(space separated list of words)')
+    et = Tkinter.Label(self.top, text = '(comma separated list of words)')
     et.pack(side = 'top', anchor = 'w')
 
     bl = tkutil.scrolling_list(self.top, 'Bad Chemical shift list', 5)
@@ -164,8 +164,7 @@ class xeasy_format_dialog(tkutil.Dialog, tkutil.Stoppable):
     show_unnumbered = self.unnumbered.state()
     reindex_peaks = self.reindex.state()
     show_note = self.note.state()
-    note_words = string.split(self.note_words.variable.get())
-    note_words = filter(lambda w: len(w) > 0, note_words)
+    note_words = self.note_words.variable.get().split(',')
     self.tolerance={'H':float(self.ppm_range.variables[0].get()),'C':float(self.ppm_range.variables[1].get()),'N':float(self.ppm_range.variables[2].get())}
     print self.tolerance
     self.stoppable_call(self.show_chemical_shifts, spectrum.condition,
@@ -348,33 +347,21 @@ class xeasy_format_dialog(tkutil.Dialog, tkutil.Stoppable):
     self.stoppable_loop('peaks', 100)
     for peak in spectrum_peak_list:
       self.check_for_stop()
-      show = ((show_unassigned or peak.is_assigned) and
-              (show_unintegrated or peak.volume != None) and
-              (show_unnumbered or self.assignment_numbered(peak.resonances()))
-              and (not note_words or
-                   not pyutil.string_contains_word(peak.note, note_words)))
-    
-    peak_id = 0
-    self.stoppable_loop('peaks', 100)
-    for peak in spectrum_peak_list:
-      self.check_for_stop()
-      show = ((show_unassigned or peak.is_assigned) and
-              (show_unintegrated or peak.volume != None) and
-              (show_unnumbered or self.assignment_numbered(peak.resonances()))
-              and (not note_words or
-                   not pyutil.string_contains_word(peak.note, note_words)))
-      show = 1;
-      if show:
-        peak_id = peak_id + 1
-        line = self.peak_line(peak, peak_id, show_heights, pseudo4D)
-        if reindex_peaks:
+      peak_id = peak_id + 1
+      line = self.peak_line(peak, peak_id, show_heights, pseudo4D)
+      if reindex_peaks:
+        if peak.is_assigned:
           peak_id2 = peak_id + 10000
           line = self.peak_line(peak, peak_id2, show_heights, pseudo4D)
-        self.peak_list.append(line, peak)
+      if show_note and len(peak.note) > 0:
+        line = line + '   # ' + peak.note
+      import re
+      if len(note_words[0]) > 0 and len(peak.note) > 0:
+        for words in note_words:
+          if re.search(words.lower().strip(),peak.note.lower()):
+            line = '# ' + peak.note + ' ' + line.lstrip()
 
-        if show_note and peak.note:
-          line = '       # ' + peak.note
-          self.peak_list.append(line, peak)
+      self.peak_list.append(line, peak)
 
   # ---------------------------------------------------------------------------
   #
@@ -408,7 +395,7 @@ class xeasy_format_dialog(tkutil.Dialog, tkutil.Stoppable):
     if pseudo4D == True:
       freq_text = freq_text + '%8.3f' %(-2.000)
       atom_ids.append(0)
-    id_text = pyutil.sequence_string(atom_ids, '%4d ')
+    id_text = pyutil.sequence_string(atom_ids, ' %5d')
     
     format = '%7d%s %1d %1s % 13.5E % 13.2E %1s 0%s'
     values = (peak_id, freq_text, color_code, spectrum_type,

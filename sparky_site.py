@@ -207,6 +207,7 @@ def standard_menu_entries():
     ('MA', 'MAGIC-Act',                 ('MAGIC_Act','show_dialog')),
     ('MV', 'MAGIC-View',                ('MAGIC_View','show_dialog')),
     ('SN', 'PDB2NOE',                   ('pdb2noe','show_dialog')),
+    ('un', 'UPL2NOE',                   ('upl2noe','show_dialog')),
     ('aa', 'AutoAssign',                ('autoassign','show_dialog')),
     ('cs', 'Chemical shift plot',       ('chemshift','show_shifts_dialog')),
     ('bm', 'Load BMRB STAR file',       ('bmrbstar', 'show_dialog')),   # From Chad Rienstra

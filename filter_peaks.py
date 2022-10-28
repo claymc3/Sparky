@@ -218,18 +218,12 @@ class filter_peaks_dialog(tkutil.Dialog, tkutil.Stoppable):
 
 	def add_spectrum(self, spectrum, table, row):
 
-		pat_name, pat_axes = expectedpeaks.recall_pattern(spectrum)
-
-		#
 		# Make spectrum checkbutton
-		#
 		cb = tkutil.checkbutton(table.frame, spectrum.name, 0)
 		#cb.button['selectcolor'] = sputil.spectrum_color(spectrum)
 		choose_cb = pyutil.precompose(sputil.choose_spectrum_cb, spectrum, table.chosen_spectra)
 		cb.add_callback(choose_cb)
 		cb.button.grid(row = row, column = 0, sticky = 'w')
-		if pat_name:
-			cb.set_state(1)
 		table.spectrum_to_checkbutton[spectrum] = cb
 
 	def remove_spectrum(self, spectrum, table):
@@ -337,6 +331,13 @@ class filter_peaks_dialog(tkutil.Dialog, tkutil.Stoppable):
 					peak.color = 'red'
 					peak.note = 'Bad w2 w3 frequencies'
 					peak.selected = 1
+		for x in Keep_list:
+			peak = peaks[x]
+			if peak.color == 'red':
+				peak.color = 'white'
+				peak.note = peak.note.replace('Bad w1 frequency', '').replace('Bad w2 w3 frequencies', '')
+			peak.selected = 0
+
 		tkMessageBox.showinfo("Filter Peaks", "Found %s bad peaks in original %s peaks" % (len(peaks) -len(Keep_list), len(peaks)))
 
 

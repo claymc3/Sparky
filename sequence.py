@@ -310,6 +310,6 @@ def show_sequence_dialog(session):
     seq_path = session.project.save_path + '.seq'
     if os.path.exists(seq_path):
       d.file_field.set(seq_path)
-  seq = d.read_sequence()
+      seq = d.read_sequence()
   d.show_window(1)
   

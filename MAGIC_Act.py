@@ -22,7 +22,7 @@ import string
 # St Jude Children's Research Hospital 
 # Department of Structural Biology Memphis, TN 
 #
-# Last updates: August 5, 2022
+# Last updates: August 9, 2022
 #
 #
 # ------------------------------------------------------------------------------
@@ -969,13 +969,13 @@ class methyl_dialog(tkutil.Dialog, tkutil.Stoppable):
 
 		if score >= 0.85: 
 			peak.label.color = 'green'
-			peak.note = peak.note.split(':')[0] + ' : %0.2f' %score
+			peak.note = peak.note.split(':')[0].strip() + ' : %0.2f' %score
 		elif score < 0.85 and score >= 0.6: 
 			peak.label.color = 'gold'
-			peak.note = peak.note.split(':')[0] + ' : %0.2f' %score
+			peak.note = peak.note.split(':')[0].strip() + ' : %0.2f' %score
 		elif score < 0.60:
 			peak.label.color = 'magenta'
-			peak.note = peak.note.split(':')[0] + ' : %0.2f' %score
+			peak.note = peak.note.split(':')[0].strip() + ' : %0.2f' %score
 		return
 
 	# ------------------------------------------------------------------------------

@@ -189,7 +189,8 @@ class filter_peaks_dialog(tkutil.Dialog, tkutil.Stoppable):
 		er = tkutil.entry_row(self.top, 'PPM tolerance: ',
 																		('1H', '0.01', 5),
 																		('13C', '0.10', 5),
-																		('15N', '0.10', 5))
+																		('15N', '0.10', 5),
+																		('NOE', '0.20', 5))
 		er.frame.pack(side = 'top', anchor = 'w')
 		self.ppm_range = er
 
@@ -252,7 +253,7 @@ class filter_peaks_dialog(tkutil.Dialog, tkutil.Stoppable):
 		settings.HNCACB = self.HNCACB.state()
 		settings.HNcoCACB = self.HNcoCACB.state()
 		settings.CBCAcoNH = self.CBCAcoNH.state()
-		settings.tolerance={'1H':float(self.ppm_range.variables[0].get()),'13C':float(self.ppm_range.variables[1].get()),'15N':float(self.ppm_range.variables[2].get())}
+		settings.tolerance={'1H':float(self.ppm_range.variables[0].get()),'13C':float(self.ppm_range.variables[1].get()),'15N':float(self.ppm_range.variables[2].get()),'NOE':float(self.ppm_range.variables[3].get())}
 		
 		return settings
 
@@ -316,27 +317,40 @@ class filter_peaks_dialog(tkutil.Dialog, tkutil.Stoppable):
 			self.checked = x + 1
 			peak = peaks[x]
 			for w1 in w1_freqs:
-				if abs(peak.frequency[0] - w1) < s.tolerance[w1nuc] and x not in Keep_list:
+				if abs(peak.frequency[0] - w1) < s.tolerance['NOE'] and x not in Keep_list:
 					Keep_list.append(x)
 			message = (' Checked %d peaks of %d peaks for w1 consistancy' % (self.checked , self.numpeaks))
 			self.progress_report(message)
 
 		for i in range(len(peaks)):
 			peak = peaks[i]
+			note = peak.note
 			if i not in Keep_list:
 				peak.color = 'red'
-				peak.note = 'Bad w1 frequency '
+				peak.note = 'Bad w1 frequency ' + note
 				peak.selected = 1
 				if i not in w2w3_keep:
 					peak.color = 'red'
-					peak.note = 'Bad w2 w3 frequencies'
+					peak.note = 'Bad w2 w3 frequencies ' + note
 					peak.selected = 1
 		for x in Keep_list:
 			peak = peaks[x]
-			if peak.color == 'red':
+			if peak.color == 'red' and 'Bad w' in peak.note:
 				peak.color = 'white'
 				peak.note = peak.note.replace('Bad w1 frequency', '').replace('Bad w2 w3 frequencies', '')
 			peak.selected = 0
+		if w1nuc == w2nuc:
+			for x in Keep_list:
+				peak = peaks[x]
+				if abs(peak.frequency[0] - peak.frequency[1]) < s.tolerance[w2nuc]:
+					peak.color = 'cyan'
+					peak.note = 'diagonal'
+		if w1nuc == w3nuc:
+			for x in Keep_list:
+				peak = peaks[x]
+				if abs(peak.frequency[0] - peak.frequency[2]) < s.tolerance[w3nuc]:
+					peak.color = 'cyan'
+					peak.note = 'diagonal'
 
 		tkMessageBox.showinfo("Filter Peaks", "Found %s bad peaks in original %s peaks" % (len(peaks) -len(Keep_list), len(peaks)))
 

@@ -15,7 +15,7 @@ import tkMessageBox
 # St Jude Children's Research Hospital 
 # Department of Structural Biology Memphis, TN 
 #
-# Last updates: August 12, 2022
+# Last updates: January 26, 2023
 #
 #
 # ------------------------------------------------------------------------------
@@ -26,7 +26,6 @@ AAA_dict = {"ALA": "A", "ARG": "R", "ASN": "N", "ASP": "D", "CYS": "C",
  "LYS": "K", "MET": "M", "PHE": "F", "PRO": "P", "SER": "S", "THR": "T",
  "TRP": "W", "TYR": "Y", "VAL": 'V', "MSE":'M', "PTR":'Y', "TPO":"T", "SEP":'S','CYSS':'C', 'HIST':'H'}
 
-
 class spectrum_menu_2D(tkutil.option_menu):
 
 	def __init__(self, session, parent, label, allow_no_choice = 0):
@@ -35,7 +34,7 @@ class spectrum_menu_2D(tkutil.option_menu):
 		self.allow_no_choice = allow_no_choice
 		self.names = self.spectrum_names()
 		tkutil.option_menu.__init__(self, parent, label,
-																self.names, self.default_spectrum_name())
+									self.names, self.default_spectrum_name())
 		self.menu['postcommand'] = self.update_menu_cb
 
 	# --------------------------------------------------------------------------
@@ -78,8 +77,7 @@ class spectrum_menu_3D(tkutil.option_menu):
 		self.session = session
 		self.allow_no_choice = allow_no_choice
 		self.names = self.spectrum_names()
-		tkutil.option_menu.__init__(self, parent, label,
-																self.names, self.default_spectrum_name())
+		tkutil.option_menu.__init__(self, parent, label ,self.names, self.default_spectrum_name())
 		self.menu['postcommand'] = self.update_menu_cb
 
 	# --------------------------------------------------------------------------
@@ -88,23 +86,21 @@ class spectrum_menu_3D(tkutil.option_menu):
 		Names = []
 		spectra = self.session.project.spectrum_list()
 		for spectrum in spectra:
-			if spectrum.dimension == 3 and 'sim' not in spectrum.name:
-				Names.append(spectrum)
+			if spectrum.dimension >= 3 and 'sim' not in spectrum.name:
+				if '_cyana' not in spectrum.name:
+					Names.append(spectrum)
 		names = pyutil.attribute_values(Names, 'name')
 		if self.allow_no_choice:
 			names = ('',) + names
 		return names
-
 	# --------------------------------------------------------------------------
 	#
 	def default_spectrum_name(self):
 
 		return pyutil.attribute(self.session.selected_spectrum(), 'name', '')
-
 	# --------------------------------------------------------------------------
 	#
 	def update_menu_cb(self):
-
 		current_names = self.spectrum_names()
 		if current_names != self.names:
 			self.names = current_names
@@ -116,11 +112,12 @@ class spectrum_menu_3D(tkutil.option_menu):
 	# --------------------------------------------------------------------------
 	#
 	def spectrum(self):
-
 		return sputil.name_to_spectrum(self.get(), self.session)
 
 class obj:
 	pass
+
+NOESY_Specs = []
 
 class assignment_distance_dialog(tkutil.Dialog, tkutil.Stoppable):
 
@@ -132,7 +129,7 @@ class assignment_distance_dialog(tkutil.Dialog, tkutil.Stoppable):
 		self.selection_notice = None
 		tkutil.Dialog.__init__(self, session.tk, 'Simulate 3D NOESY from PDB')
 
-		explain = ('(last edits August 9, 2022)\n')
+		explain = ('(last edits January 26, 2023)\n')
 		w = Tkinter.Label(self.top, text = explain, justify = 'left')
 		w.pack(side = 'top', anchor = 'w')
 
@@ -142,13 +139,6 @@ class assignment_distance_dialog(tkutil.Dialog, tkutil.Stoppable):
 		ep = tkutil.file_field2(self.top, 'PDB file', 'Browse...', file_type=[('Protein Data Bank File', '.pdb')], default_ext='.pdb')
 		self.pdb_path = ep.variable
 		ep.frame.pack(side = 'top', anchor = 'w')
-
-		explain = ('Distance threshold for het. atom to het. atom')
-		w = Tkinter.Label(self.top, text = explain, justify = 'left')
-		w.pack(side = 'top', anchor = 'w')
-		e = tkutil.entry_field(self.top, 'distance cutoff: ', '', 5)
-		self.max_dist = e.variable
-		e.frame.pack(side = 'top', anchor = 'w')
 
 		explain = ('Specify which chain(s) should be used,limit 2')
 		w = Tkinter.Label(self.top, text = explain, justify = 'left')
@@ -164,105 +154,82 @@ class assignment_distance_dialog(tkutil.Dialog, tkutil.Stoppable):
 		self.model_number = mn.variable
 		mn.frame.pack(side = 'top', anchor = 'w')
 
-		explain = ('Select NOESY Spectrum')
-		w = Tkinter.Label(self.top, text = explain, justify = 'left')
-		w.pack(side = 'top', anchor = 'w')    
-		self.spectrum_choice_3DNOESY = spectrum_menu_3D(session, self.top, '3D NOESY:    ')
-		self.spectrum_choice_3DNOESY.frame.pack(side = 'top', anchor = 'w')
-
-	# Reference Spectrum defines w2, w3 of 3D NOESY
-		explain = ('Select 2D spectrum wich defines the w2, w3 dimensions of NOESY')
-		w = Tkinter.Label(self.top, text = explain, justify = 'left')
+	## Reference Spectra Containing NOESY Assingments 
+		w = Tkinter.Label(self.top, text = 'Select 2D Spectra Containing Assingments', justify = 'left')
 		w.pack(side = 'top', anchor = 'w')
-		self.spectrum_choice_ref = spectrum_menu_2D(session, self.top, '2D editing: ')
-		self.spectrum_choice_ref.frame.pack(side = 'top', anchor = 'w')
-
-	# NOE SPECTRUM defines atoms found in noe (w1) dimension of 3DNOESY
-		explain = ('Select 2D spectra that contain assignments\n that can be assigned to w1 of NOESY spectrum')
-		w = Tkinter.Label(self.top, text = explain, justify = 'left')
-		w.pack(side = 'top', anchor = 'w')    
-		self.sc = self.spectrum_choice_table(self.top)
-		self.sc.pack(side = 'top', anchor = 'w')
-
-		ib = tkutil.checkbutton(self.top, 'With diagonal peaks?', 0)
-		ib.button.pack(side = 'top', anchor = 'w')
-		self.diagonal = ib
+		self.HN_spectrum = spectrum_menu_2D(session, self.top, 'HN: ')
+		self.HN_spectrum.frame.pack(side = 'top', anchor = 'w',pady = 2)
+		self.Ali_spectrum = spectrum_menu_2D(session, self.top, 'Ali/Me: ')
+		self.Ali_spectrum.frame.pack(side = 'top', anchor = 'w',pady = 2)
+		self.Aro_spectrum = spectrum_menu_2D(session, self.top, 'Aromatic: ')
+		self.Aro_spectrum.frame.pack(side = 'top', anchor = 'w',pady = 2)
+		self.Other_spectrum = spectrum_menu_2D(session, self.top, 'Other: ')
+		self.Other_spectrum.frame.pack(side = 'top', anchor = 'w',pady = 2)
 
 		im = tkutil.checkbutton(self.top, 'Mono-mythyl', 0)
 		im.button.pack(side = 'top', anchor = 'w')
 		self.mono = im
-
 		ha = tkutil.checkbutton(self.top, 'Use Heavy Atoms', 0)
 		ha.button.pack(side = 'top', anchor = 'w')
 		self.heavyatoms = ha
-
 		progress_label = Tkinter.Label(self.top, anchor = 'nw')
 		progress_label.pack(side = 'top', anchor = 'w',padx=2)
 
 		br = tkutil.button_row(self.top,
+								('Add NOESY', self.add_NOESY),
 								('Generate peaklist', self.Generate_NOESY),
 								('Close', self.close_cb),
 								('Stop', self.stop_cb))
 		br.frame.pack(side = 'top', anchor = 'w')
 
-		tkutil.Stoppable.__init__(self, progress_label, br.buttons[2])
+		tkutil.Stoppable.__init__(self, progress_label, br.buttons[3])
+
+	# ------------------------------------------------------------------------------
+	# 
+	def add_NOESY(self):
+		self.lf = Tkinter.LabelFrame(self.top, text = 'NOESY Settings')
+		self.lf.pack(fill=Tkinter.X, pady=5, padx=5)
+		noesyframe = Tkinter.Frame(self.lf)
+		l1 = Tkinter.Label(noesyframe, text = '2D Editing:  ')
+		l2 = Tkinter.Label(noesyframe, text = '     NOESY:  ')
+		l1.grid(row = 2, column = 0)
+		l2.grid(row = 3, column = 0)
+
+		spectrum = spectrum_menu_3D(self.session,noesyframe, 'Spectrum: ')
+		spectrum.frame.grid(row =0, column = 0, sticky = Tkinter.W, columnspan = 4)
+		distance =  tkutil.entry_field(noesyframe, 'Distance Cutoff: ', '5', 5)
+		max_dist = distance.variable
+		distance.frame.grid(row = 1, column = 0, columnspan = 2)
+		diagonal = tkutil.checkbutton2(noesyframe,'With Diagonal', 0,1,2)
+		edim_nh = tkutil.checkbutton2(noesyframe, 'HN',  0,2,1)
+		edim_ali = tkutil.checkbutton2(noesyframe, 'Ail/Me',  0,2,2)
+		edim_aro = tkutil.checkbutton2(noesyframe, 'Aromatic', 0,2,3)
+		edim_other = tkutil.checkbutton2(noesyframe,  'Other',  0,2,4)
+		noe_nh = tkutil.checkbutton2(noesyframe,  'HN',  0,3,1)
+		noe_ali = tkutil.checkbutton2(noesyframe,  'Ail/Me', 0,3,2)
+		noe_aro = tkutil.checkbutton2(noesyframe, 'Aromatic', 0,3,3)
+		noe_other = tkutil.checkbutton2(noesyframe, 'Other', 0,3,4)
+		NOESY_Specs.append((spectrum, max_dist, diagonal ,edim_nh ,edim_ali ,edim_aro, edim_other, noe_nh, noe_ali,noe_aro, noe_other))
+		noesyframe.pack(pady=5, padx = 5)
 
 	# ------------------------------------------------------------------------------
 	#
-	def spectrum_choice_table(self, parent):
-
-		headings = ('')
-		st = sputil.spectrum_table(self.session, parent, headings, self.add_spectrum, self.remove_spectrum)
-		st.spectrum_to_checkbutton = {}
-		st.chosen_spectra = []
-		st.spectrum_epeak_menus = {}
-		st.axis_order_menu = {}
-		self.spectrum_table = st
-		
-		spectra = self.session.project.spectrum_list()
-		for spectrum in spectra:
-			if spectrum.dimension == 2:
-				st.add_spectrum(spectrum)
-		return st.frame
-
-	def add_spectrum(self, spectrum, table, row):
-
-		# Make spectrum checkbutton
-		if spectrum.dimension == 2:
-			cb = tkutil.checkbutton(table.frame, spectrum.name, 0)
-			#cb.button['selectcolor'] = sputil.spectrum_color(spectrum)
-			choose_cb = pyutil.precompose(sputil.choose_spectrum_cb, spectrum, table.chosen_spectra)
-			cb.add_callback(choose_cb)
-			cb.button.grid(row = row, column = 0, sticky = 'w')
-			table.spectrum_to_checkbutton[spectrum] = cb
-
-	def remove_spectrum(self, spectrum, table):
-
-		cb = table.spectrum_to_checkbutton[spectrum]
-		cb.set_state(0)
-		cb.button.destroy()
-		del table.spectrum_to_checkbutton[spectrum]
-
-		table.spectrum_epeak_menus[spectrum].frame.destroy()
-		del table.spectrum_epeak_menus[spectrum]
-
-		table.axis_order_menu[spectrum].frame.destroy()
-		del table.axis_order_menu[spectrum]
 
 	def get_settings(self):
-	
+
 		settings = pyutil.generic_class()
-		settings.spectrum_ref = self.spectrum_choice_ref.spectrum()   
-		settings.spectrum_3DNOESY = self.spectrum_choice_3DNOESY.spectrum()    
-		spectra = self.spectrum_table.chosen_spectra
-		settings.spectrum_noe_list=[spectrum for spectrum in spectra]
-		settings.pdb_path = self.pdb_path.get()   
-		settings.diagonal=self.diagonal.state()
+		settings.HN_spectrum = self.HN_spectrum.spectrum()
+		settings.Ali_spectrum = self.Ali_spectrum.spectrum()
+		settings.Aro_spectrum = self.Aro_spectrum.spectrum()
+		settings.Other_spectrum = self.Other_spectrum.spectrum()
+		settings.pdb_path = self.pdb_path.get()
 		settings.mono=self.mono.state()
-		settings.max_distance = pyutil.string_to_float(self.max_dist.get())
 		settings.chains = self.chains.get().replace(',','')
 		settings.mnum = self.model_number.get()
 		settings.heavyatoms = self.heavyatoms.state()
+		print settings.HN_spectrum.name
+		print settings.Ali_spectrum.name
+		print settings.Aro_spectrum.name
 		return settings
 
 	# ------------------------------------------------------------------------------
@@ -279,6 +246,7 @@ class assignment_distance_dialog(tkutil.Dialog, tkutil.Stoppable):
 	def Generate_NOESY_cb(self):
 
 		s = self.get_settings()
+		self.session.unselect_all_ornaments()
 		for peak in self.session.selected_peaks():
 			if peak.label: peak.label.selected = 0
 			peak.selected = 0
@@ -291,110 +259,125 @@ class assignment_distance_dialog(tkutil.Dialog, tkutil.Stoppable):
 		if s.heavyatoms == True:
 			protonated = False
 
-		Freq_dict = {}
-		atoms_list_ref = []
-		for peak in s.spectrum_ref.peak_list():
-			if '?' not in peak.assignment:
-				resn = peak.resonances()[0].group.name
-				resi = peak.resonances()[0].group.number
-				ra1 = peak.resonances()[0].atom.name
-				ra2 = peak.resonances()[1].atom.name
-				if protonated == True:
-					group = '%s %s %s' %(peak.resonances()[0].group.symbol, resi, ra2)
-				if protonated == False:
-					group = '%s %s %s' %(peak.resonances()[0].group.symbol, resi, ra1)
-				atoms_list_ref.append([group,resn+ra1, resn+ra2])
-				Freq_dict[resn+ra1] = peak.frequency[0]
-				Freq_dict[resn+ra2] = peak.frequency[1]
+		for (spectrum, max_dist, diagonal ,edim_nh ,edim_ali ,edim_aro, edim_other, noe_nh, noe_ali, noe_aro, noe_other) in NOESY_Specs:
+			NOESY_Spectrum = spectrum.spectrum()
+			ref_spectrum, noe_spectra = '', []
+			if edim_nh.state(): ref_spectrum = s.HN_spectrum
+			if edim_ali.state(): ref_spectrum = s.Ali_spectrum
+			if edim_aro.state(): ref_spectrum = s.Aro_spectrum
+			if edim_other.state(): ref_spectrum = s.Other_spectrum
+			if noe_nh.state(): noe_spectra.append(s.HN_spectrum)
+			if noe_ali.state(): noe_spectra.append(s.Ali_spectrum)
+			if noe_aro.state(): noe_spectra.append(s.Aro_spectrum)
+			if noe_other.state(): noe_spectra.append(s.Other_spectrum)
 
-		atoms_list_noe = []
-		for noe_spectrum in s.spectrum_noe_list:
-			for peak in noe_spectrum.peak_list():
+			Freq_dict = {}
+			editing_atoms = []
+			for peak in ref_spectrum.peak_list():
 				if '?' not in peak.assignment:
 					resn = peak.resonances()[0].group.name
 					resi = peak.resonances()[0].group.number
-					resi2 = peak.resonances()[0].group.symbol +   str(int(peak.resonances()[0].group.number)+1000) ## for dimers
-					na1 = peak.resonances()[0].atom.name
-					na2 = peak.resonances()[1].atom.name
-					if protonated == True:
-						group = '%s %s %s' %(peak.resonances()[0].group.symbol, resi, na2)
-					if protonated == False:
-						group = '%s %s %s' %(peak.resonances()[0].group.symbol, resi, na1)
-					if s.spectrum_3DNOESY.nuclei[0] != '1H':
-						atoms_list_noe.append([group,resn+na1])
-						Freq_dict[resn+na1] = peak.frequency[0]
-					if s.spectrum_3DNOESY.nuclei[0] == '1H':
-						atoms_list_noe.append([group,resn+na2])
-						Freq_dict[resn+na2] = peak.frequency[1]
-					if len(s.chains) == 2:
+					if isinstance(resi,int) == True and isinstance(resn[0],str) == True:
+						ra1 = peak.resonances()[0].atom.name
+						ra2 = peak.resonances()[1].atom.name
 						if protonated == True:
-							group2 = '%s %s %s' %(peak.resonances()[0].group.symbol, resi2, na2)
+							group = '%s %s %s' %(peak.resonances()[0].group.symbol, resi, ra2)
 						if protonated == False:
-							group2 = '%s %s %s' %(peak.resonances()[0].group.symbol, resi2, na1)
-						if s.spectrum_3DNOESY.nuclei[0] != '1H':
-							atoms_list_noe.append([group2,resn2+na1])
-							Freq_dict[resn2+na1] = peak.frequency[0]
-						if s.spectrum_3DNOESY.nuclei[0] == '1H':
-							atoms_list_noe.append([group2,resn2+na2])
-							Freq_dict[resn2+na2] = peak.frequency[1]
+							group = '%s %s %s' %(peak.resonances()[0].group.symbol, resi, ra1)
+						editing_atoms.append([group,resn+ra1, resn+ra2])
+						Freq_dict[resn+ra1] = peak.frequency[0]
+						Freq_dict[resn+ra2] = peak.frequency[1]
 
-## Check if simulation spectrum is present if not create one, if there is clear the peak list. 
-		proj_spectra=self.session.project.spectrum_list()
-		spectrum_ref_name=s.spectrum_3DNOESY.name
-		proj_spec_names = [spectrum.name for spectrum in self.session.project.spectrum_list()]
-		if spectrum_ref_name+'_sim' in proj_spec_names:
-			print('Found spectrum in project list')
-			spectrum = sputil.name_to_spectrum(spectrum_ref_name+'_sim', self.session)
-			for peak in spectrum .peak_list():
-				peak.selected = 1
-			self.session.command_characters("")
-		if spectrum_ref_name+'_sim' not in proj_spec_names:
-			save_path_new = str(s.spectrum_3DNOESY.save_path+'SIM')
-			save_new = open(save_path_new, 'w')
-			save_content = open(s.spectrum_3DNOESY.save_path, 'r')
-			if 'condition' in open(s.spectrum_3DNOESY.save_path).read():
-				for line in save_content.readlines():
-					line = line.replace('name ' + s.spectrum_3DNOESY.name ,'name '+ s.spectrum_3DNOESY.name + '_sim')
-					if 'condition' in line:
-						line = 'condition sim\n'
-					if (line=='<end view>\n'): break
-					save_new.write(line)
-			if 'condition' not in open(s.spectrum_3DNOESY.save_path).read():
-				for line in save_content.readlines():
-					if 'name ' + s.spectrum_3DNOESY.name in line:
-						line = 'condition sim\n' + line.replace('name ' + s.spectrum_3DNOESY.name ,'name '+ s.spectrum_3DNOESY.name + '_sim')
-					if (line=='<end view>\n'): break
-					save_new.write(line)
-			save_new.write('<end view>\n<ornament>\n<end ornament>\n<end spectrum>\n')
-			save_new.close()
-			self.session.open_spectrum(save_path_new)
+			noe_atoms = []
+			for noe_spectrum in noe_spectra:
+				for peak in noe_spectrum.peak_list():
+					if '?' not in peak.assignment:
+						resn = peak.resonances()[0].group.name
+						resi = peak.resonances()[0].group.number
+						if isinstance(resi,int) == True and isinstance(resn[0],str) == True:
+							resi2 = peak.resonances()[0].group.symbol +   str(int(peak.resonances()[0].group.number)+1000) ## for dimers
+							na1 = peak.resonances()[0].atom.name
+							na2 = peak.resonances()[1].atom.name
+							if protonated == True:
+								group = '%s %s %s' %(peak.resonances()[0].group.symbol, resi, na2)
+							if protonated == False:
+								group = '%s %s %s' %(peak.resonances()[0].group.symbol, resi, na1)
+							if NOESY_Spectrum.nuclei[0] != '1H':
+								noe_atoms.append([group,resn+na1])
+								Freq_dict[resn+na1] = peak.frequency[0]
+							if NOESY_Spectrum.nuclei[0] == '1H':
+								noe_atoms.append([group,resn+na2])
+								Freq_dict[resn+na2] = peak.frequency[1]
+							if len(s.chains) == 2:
+								if protonated == True:
+									group2 = '%s %s %s' %(peak.resonances()[0].group.symbol, resi2, na2)
+								if protonated == False:
+									group2 = '%s %s %s' %(peak.resonances()[0].group.symbol, resi2, na1)
+								if NOESY_Spectrum.nuclei[0] != '1H':
+									noe_atoms.append([group2,resn2+na1])
+									Freq_dict[resn2+na1] = peak.frequency[0]
+								if NOESY_Spectrum.nuclei[0] == '1H':
+									noe_atoms.append([group2,resn2+na2])
+									Freq_dict[resn2+na2] = peak.frequency[1]
+			## Check if simulation spectrum is present if not create one, if there is clear the peak list. 
+			proj_spectra=self.session.project.spectrum_list()
+			spectrum_ref_name=NOESY_Spectrum.name
+			proj_spec_names = [spectrum.name for spectrum in self.session.project.spectrum_list()]
 
-		spectrum = sputil.name_to_spectrum(spectrum_ref_name+'_sim', self.session)
-		noe_peak_list = self.distances(s.pdb_path, s.max_distance, s.chains, s.mnum, s.diagonal, s.mono, atoms_list_ref, atoms_list_noe)
-		for (tassignment,w1,w2,w3,d) in noe_peak_list:
-			assignment = sputil.parse_assignment(tassignment)
-			frequency = [Freq_dict[w1],Freq_dict[w2],Freq_dict[w3]]
-			note = str(d)
-			if d == 0.0:
-				color = "cyan"
-			if d <= 4.0 and d != 0.0:
-				color = 'green'
-			if d > 4.0: 
-				color = "white"
-			self.create_peak(assignment,frequency, note, color, spectrum)
-			if d > 0.0: 
-				print '------ '+str(tassignment.replace(w3,assignment[2][1]))+' ------'
-				print "%14.1f" %d 
-		for (label, peak) in zip(spectrum.label_list(), spectrum.peak_list()):
-			label.color = peak.color
-			peak.color = "white"
-			if label.color == "cyan":
-				peak.color = "cyan"
-		import datetime as time
-		self.count = len(noe_peak_list)
-		self.time = time.datetime.now().strftime("%m-%d-%y %H:%M")
-		message = ('Created %d new cross peaks\nLast run %s' % (self.count, self.time))
-		self.progress_report(message)
+			if spectrum_ref_name+'_sim' in proj_spec_names:
+				print('Found spectrum in project list')
+				spectrum = sputil.name_to_spectrum(spectrum_ref_name+'_sim', self.session)
+				for peak in spectrum .peak_list():
+					peak.selected = 1
+				self.session.command_characters("")
+
+			if spectrum_ref_name+'_sim' not in proj_spec_names:
+				save_path_new = str(NOESY_Spectrum.save_path+'SIM')
+				save_new = open(save_path_new, 'w')
+				save_content = open(NOESY_Spectrum.save_path, 'r')
+				if 'condition' in open(NOESY_Spectrum.save_path).read():
+					for line in save_content.readlines():
+						line = line.replace('name ' + NOESY_Spectrum.name ,'name '+ NOESY_Spectrum.name + '_sim')
+						if 'condition' in line:
+							line = 'condition sim\n'
+						if (line=='<end view>\n'): break
+						save_new.write(line)
+				if 'condition' not in open(NOESY_Spectrum.save_path).read():
+					for line in save_content.readlines():
+						if 'name ' + NOESY_Spectrum.name in line:
+							line = 'condition sim\n' + line.replace('name ' + NOESY_Spectrum.name ,'name '+ NOESY_Spectrum.name + '_sim')
+						if (line=='<end view>\n'): break
+						save_new.write(line)
+				save_new.write('<end view>\n<ornament>\n<end ornament>\n<end spectrum>\n')
+				save_new.close()
+				self.session.open_spectrum(save_path_new)
+
+			out_spectrum = sputil.name_to_spectrum(spectrum_ref_name+'_sim', self.session)
+			noe_peak_list = self.distances(s.pdb_path, pyutil.string_to_float(max_dist.get()), s.chains, s.mnum, diagonal.state(), s.mono, editing_atoms, noe_atoms)
+			for (tassignment,w1,w2,w3,d) in noe_peak_list:
+				assignment = sputil.parse_assignment(tassignment)
+				frequency = [Freq_dict[w1],Freq_dict[w2],Freq_dict[w3]]
+				note = str(d)
+				if d == 0.0:
+					color = "cyan"
+				if d <= 4.0 and d != 0.0:
+					color = 'green'
+				if d > 4.0: 
+					color = "white"
+				self.create_peak(assignment,frequency, note, color, out_spectrum)
+				if d > 0.0: 
+					print '------ '+str(tassignment.replace(w3,assignment[2][1]))+' ------'
+					print "%14.1f" %d 
+			for peak in out_spectrum.peak_list():
+				peak.label.color = peak.color
+				peak.color = "white"
+				if peak.label.color == "cyan":
+					peak.color = "cyan"
+			import datetime as time
+			self.count = len(noe_peak_list)
+			self.time = time.datetime.now().strftime("%m-%d-%y %H:%M")
+			message = ('Created %d new cross peaks\nLast run %s' % (self.count, self.time))
+			self.progress_report(message)
 
 	# ------------------------------------------------------------------------------
 	# return atoms_list entry containing expansion of pseudo atoms for entries 
@@ -449,7 +432,7 @@ class assignment_distance_dialog(tkutil.Dialog, tkutil.Stoppable):
 		reff = round(m.pow(d, -1/6.0), 2)
 		return reff
 
-	def distances(self, path, Cutoff, chains, mnum, diagonal, mono, atoms_list_ref,atoms_list_noe):
+	def distances(self, path, Cutoff, chains, mnum, diagonal, mono, editing_atoms,noe_atoms):
 		resids = []
 		if len(mnum) != 0:
 			model = 'MODEL' + '%9s\n' %mnum
@@ -461,7 +444,9 @@ class assignment_distance_dialog(tkutil.Dialog, tkutil.Stoppable):
 			for line in open(path).readlines()[start:]:
 				if line == 'ENDMDL\n': break
 				if line[0:4] == "ATOM" or line[0:4] == 'HETA':
-					if line[17:20].strip() in AAA_dict.keys() and line[21] == chains:
+					chainid = line[21]
+					if chainid  == ' ':chainid = line[72]
+					if line[17:20].strip() in AAA_dict.keys() and chainid == chains:
 						if re.search('[1-9]', line[12:16].strip()[0]):
 							atom = line[12:16].strip()[1:] + line[12:16].strip()[0]
 						else: atom = line[12:16].strip()
@@ -472,14 +457,16 @@ class assignment_distance_dialog(tkutil.Dialog, tkutil.Stoppable):
 			for line in open(path).readlines()[start:]:
 				if line == 'ENDMDL\n': break
 				if line[0:4] == "ATOM" or line[0:4] == 'HETA':
-					if line[17:20].strip() in AAA_dict.keys() and line[21] == chains[0]:
+					chainid = line[21]
+					if chainid  == ' ':chainid = line[72]
+					if line[17:20].strip() in AAA_dict.keys() and chainid == chains[0]:
 						if re.search('[1-9]', line[12:16].strip()[0]):
 							atom = line[12:16].strip()[1:] + line[12:16].strip()[0]
 						else: atom = line[12:16].strip()
 						group = '%s %s %s' %(AAA_dict[line[17:20].strip()],line[22:26].strip(),line[12:16].strip())
 						PDBdict[group]=[float(line[30:38].strip()),float(line[38:46].strip()),float(line[46:54].strip())]
 						resids.append(AAA_dict[line[17:20].strip()]+line[22:26].strip())
-					if line[17:20].strip() in AAA_dict.keys() and line[21] == chains[1]:
+					if line[17:20].strip() in AAA_dict.keys() and chainid == chains[1]:
 						if re.search('[1-9]', line[12:16].strip()[0]):
 							atom = line[12:16].strip()[1:] + line[12:16].strip()[0]
 						else: atom = line[12:16].strip()
@@ -490,9 +477,9 @@ class assignment_distance_dialog(tkutil.Dialog, tkutil.Stoppable):
 			tkMessageBox.showinfo('Input Error', "No PDB entries found \n Check input selections try again")
 			return
 		NOESY3D_peaklist = []
-		for (atom1,noew2,noew3) in atoms_list_ref:
+		for (atom1,noew2,noew3) in editing_atoms:
 			atoms1 = self.find_atoms(atom1, PDBdict)
-			for (atom2,noew1) in atoms_list_noe:
+			for (atom2,noew1) in noe_atoms:
 				atoms2 = self.find_atoms(atom2, PDBdict)
 				if len(atoms1) != 0 and len(atoms2) != 0 and atom1 != atom2:
 					if mono == True:
@@ -506,8 +493,8 @@ class assignment_distance_dialog(tkutil.Dialog, tkutil.Stoppable):
 			tkMessageBox.showinfo('Input Error', "No NOESY entries generated \n Check input selections and try again")
 			return
 		if diagonal == True:
-			for (atom1,noew2,noew3) in atoms_list_ref:
-				for (atom2,noew1) in atoms_list_noe:
+			for (atom1,noew2,noew3) in editing_atoms:
+				for (atom2,noew1) in noe_atoms:
 					if atom1 == atom2:
 						NOESY3D_peaklist.append([noew1+"-"+noew2+"-"+noew3, noew1, noew2, noew3, 0.0])
 

@@ -19,7 +19,7 @@ import string
 # St Jude Children's Research Hospital 
 # Department of Structural Biology Memphis, TN 
 #
-# Last updates: August 5, 2022
+# Last updates: February 15, 2023
 #
 #
 # ------------------------------------------------------------------------------
@@ -278,7 +278,7 @@ class Assignment_Progress_dialog(tkutil.Dialog, tkutil.Stoppable):
 			mn+=1
 			cmx_out.write('open %s\n rename #%s %s\ncartoon style radius 1.5\ncolor #%s gray(150) target ac\n' %(s.pdb_path, mn, spectrum.name,mn))
 			plm_out.write('create %s, %s and chain %s\n'%(spectrum.name, pdb_name, s.chains))
-			assigned, tentative, used = [], [], []
+			assigned, tentative, unconfirmed, used = [], [], [], []
 			for label in spectrum.label_list():
 				peak = label.peak
 				if '?' not in peak.assignment:
@@ -295,6 +295,10 @@ class Assignment_Progress_dialog(tkutil.Dialog, tkutil.Stoppable):
 								if int(peak.resonances()[0].group.number) not in tentative:
 									tentative.append(int(peak.resonances()[0].group.number))
 									used.append(str(peak.resonances()[0].group.number))
+						if str(peak.resonances()[0].group.number) not in used:
+							if int(peak.resonances()[0].group.number) not in unconfirmed:
+								used.append(str(peak.resonances()[0].group.number))
+								unconfirmed.append(int(peak.resonances()[0].group.number))
 
 			assigned = sorted(assigned)
 			tentative = sorted(tentative)
@@ -345,6 +349,21 @@ class Assignment_Progress_dialog(tkutil.Dialog, tkutil.Stoppable):
 					plm_out.write(plmgold[:-1] + '\n')
 					if '15N' in spectrum.nuclei: cmx_out.write(cmxgold[:-1] + ' gold target c\n')
 					if '13C' in spectrum.nuclei: cmx_out.write(cmxgold[:-1] + ' gold target a\n')
+			if len(unconfirmed) != 0:
+				tassign = '##### Tentative Assigments %d: ' %(len(unconfirmed))
+				for x in range(0,len(unconfirmed),50):
+					i = x
+					plmgold = 'color cyan, %s and resi ' %spectrum.name
+					cmxgold = 'color #%s:' %mn
+					for j in range(50):
+						tassign = tassign + sdict[unconfirmed[i]] + ' '
+						plmgold = plmgold + str(unconfirmed[i]) + '+'
+						cmxgold = cmxgold + str(unconfirmed[i]) + ','
+						i=i+1
+						if i== len(unconfirmed): break
+					plm_out.write(plmgold[:-1] + '\n')
+					if '15N' in spectrum.nuclei: cmx_out.write(cmxgold[:-1] + ' cyan target c\n')
+					if '13C' in spectrum.nuclei: cmx_out.write(cmxgold[:-1] + ' cyan target a\n')
 			if len(unassigned) != 0:
 				missing = missing + ' %d: ' %(len(unassigned))
 				for x in range(0,len(unassigned),50):
@@ -500,7 +519,7 @@ class Assignment_Progress_dialog(tkutil.Dialog, tkutil.Stoppable):
 				self.summary_list.append(spectrum.name + ' Backbone Spectrum')
 				assignments = backbone
 			
-			assigned,tentative,	used,	unassigned = [],[],[],[]
+			assigned, tentative, used, unconfirmed, unassigned = [],[],[],[],[]
 			for label in spectrum.label_list():
 				peak = label.peak
 				if '?' not in peak.assignment:
@@ -521,17 +540,20 @@ class Assignment_Progress_dialog(tkutil.Dialog, tkutil.Stoppable):
 							if 'blue' in peak.color.lower() or 'blue' in label.color.lower():
 								assigned.append(peak.resonances()[0].group.name + peak.resonances()[0].atom.name)
 								used.append(peak.resonances()[0].group.name + peak.resonances()[0].atom.name)
-
+						if peak.resonances()[0].group.name + peak.resonances()[0].atom.name not in used:
+							unconfirmed.append(peak.resonances()[0].group.name + peak.resonances()[0].atom.name)
+							used.append(peak.resonances()[0].group.name + peak.resonances()[0].atom.name)
 			for resi in assignments:
 				if resi not in used: 
 					unassigned.append(resi)
 			total = len(assignments)
 			self.summary_list.append('Possible Assignments:')
-			self.summary_list.append('    Total     %4.1f%% (%d/%d)' %(100*((len(assigned) + len(tentative))/ float(len(assignments))),len(assigned) + len(tentative),len(assignments)))
-			self.summary_list.append('    Confident %4.1f%% (%d/%d)' %(100*((len(assigned))/ float(len(assignments))),len(assigned),len(assignments)))
-			self.summary_list.append('    Tentative %4.1f%% (%d/%d)' %(100*((len(tentative))/ float(len(assignments))),len(tentative),len(assignments)))
-			self.summary_list.append('    Peaks     %4.1f%% (%d/%d)' %(100*((len(assigned) + len(tentative))/ float(len(spectrum.peak_list()))),len(assigned) + len(tentative),len(spectrum.peak_list())))
-			self.summary_list.append('Tentative Assigments (%d):' %len(tentative))
+			self.summary_list.append('    Total       %4.1f%% (%d/%d)' %(100*((len(assigned) + len(tentative))/ float(len(assignments))),len(assigned) + len(tentative),len(assignments)))
+			self.summary_list.append('    Confident   %4.1f%% (%d/%d)' %(100*((len(assigned))/ float(len(assignments))),len(assigned),len(assignments)))
+			self.summary_list.append('    Tentative   %4.1f%% (%d/%d)' %(100*((len(tentative))/ float(len(assignments))),len(tentative),len(assignments)))
+			self.summary_list.append('    Unconfirmed %4.1f%% (%d/%d)' %(100*((len(unconfirmed))/ float(len(assignments))),len(unconfirmed),len(assignments)))
+			self.summary_list.append('    Peaks       %4.1f%% (%d/%d)' %(100*((len(assigned) + len(tentative))/ float(len(spectrum.peak_list()))),len(assigned) + len(tentative) + len(unconfirmed),len(spectrum.peak_list())))
+			self.summary_list.append('Tentative Assignments (%d):' %len(tentative))
 			for x in range(0, len(tentative),5):
 				i = x
 				tAssign = '   '
@@ -543,7 +565,18 @@ class Assignment_Progress_dialog(tkutil.Dialog, tkutil.Stoppable):
 					i=i+1
 					if i== len(tentative): break
 				self.summary_list.append(tAssign)
-			self.summary_list.append('Missing Assigments (%d):' %len(unassigned))
+			self.summary_list.append('Unconfirmed Assignments (%d):' %len(unconfirmed))
+			for x in range(0, len(unconfirmed),5):
+				i = x
+				ucAssign = '   '
+				for j in range(5):
+					if '15N' in spectrum.nuclei:
+						ucAssign = ucAssign + ' ' + unconfirmed[i][:-1]
+					if '13C' in spectrum.nuclei: ucAssign = ucAssign + ' ' + unconfirmed[i]
+					i=i+1
+					if i== len(unconfirmed): break
+				self.summary_list.append(ucAssign)
+			self.summary_list.append('Missing Assignments (%d):' %len(unassigned))
 			for x in range(0, len(unassigned),5):
 				i = x
 				uAssign = '   '

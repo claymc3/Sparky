@@ -3,13 +3,16 @@
 # This is the the format read by structure calculation program Dyana.
 #
 import string
-import Tkinter
+import Tkinter as tk
 import myseq
 import pyutil
 import sparky
 import sputil
 import cyana
 import tkutil
+from functools import cmp_to_key
+import os
+
 
 # -----------------------------------------------------------------------------
 #
@@ -18,9 +21,9 @@ import tkutil
 # St Jude Children's Research Hospital 
 # Department of Structural Biology Memphis, TN 
 #
-# Last updates: September 13, 2022
+# Last updates: February 22, 2023
 #
-# Update added the ability of filter the resonances list to detect entries that are
+# Update added the ability of filter the resonances list to detect entries that are:
 #   Not in sequence 
 #   Incorrect atoms name
 #   High standard deviation indicating miss assignment 
@@ -28,26 +31,28 @@ import tkutil
 # -----------------------------------------------------------------------------
 #
 
-Allowed_atoms = {'A': ['?', 'H', 'HA', 'HB', 'C', 'CA', 'CB', 'N','QB'],
- 'C': ['?', 'H', 'HA', 'HB2', 'HB3', 'QB', 'HG', 'C', 'CA', 'CB', 'N'],
- 'D': ['?', 'H', 'HA', 'HB2', 'HB3', 'QB', 'HD2', 'C', 'CA', 'CB', 'CG', 'N'],
- 'E': ['?', 'H', 'HA', 'HB2', 'HB3', 'QB', 'HE2', 'HG2', 'HG3', 'QG', 'C', 'CA', 'CB', 'CD', 'CG', 'N'],
- 'F': ['?', 'H', 'HA', 'HB2', 'HB3', 'QB', 'HD1', 'HD2', 'QD', 'HE1', 'HE2', 'QE', 'HZ', 'C', 'CA', 'CB', 'CD1', 'CD2', 'CE1', 'CE2', 'CG', 'CZ', 'N'],
- 'G': ['?', 'H', 'HA2', 'HA3', 'C', 'CA', 'N'],
- 'H': ['?', 'H', 'HA', 'HB2', 'HB3', 'QB', 'QB', 'HD1', 'HD2', 'QD', 'HE1', 'HE2', 'QE', 'C', 'CA', 'CB', 'CD2', 'CE1', 'CG', 'N', 'ND1', 'NE2'],
- 'I': ['?', 'H', 'HA', 'HB', 'HG12', 'HG13', 'QG1', 'HD1', 'QD1', 'HG2', 'QG2', 'C', 'CA', 'CB', 'CD1', 'CG1', 'CG2', 'N'],
- 'K': ['?', 'H', 'HA', 'HB2', 'HB3', 'QB', 'HD2', 'HD3', 'QD', 'HE2', 'HE3', 'QE', 'HG2', 'HG3', 'QG', 'C', 'CA', 'CB', 'CD', 'CE', 'CG', 'N', 'NZ', 'QZ', 'HZ'],
- 'L': ['?', 'H', 'HA', 'HB2', 'HB3', 'QB', 'HG', 'HD1', 'QD1', 'HD2', 'QD2', 'C', 'CA', 'CB', 'CD1', 'CD2', 'CG', 'N'],
- 'M': ['?', 'H', 'HA', 'HB2', 'HB3', 'QB', 'HG2', 'HG3', 'QG', 'HE', 'QE', 'C', 'CA', 'CB', 'CE', 'CG', 'N'],
- 'N': ['?', 'H', 'HA', 'HB2', 'HB3', 'QB', 'HD21', 'HD22', 'QD', 'C', 'CA', 'CB', 'CG', 'N', 'ND2'],
- 'P': ['?', 'HA', 'HB2', 'HB3', 'QB', 'HD2', 'HD3', 'QD', 'HG2', 'HG3', 'QG', 'C', 'CA', 'CB', 'CD', 'CG', 'N'],
- 'Q': ['?', 'H', 'HA', 'HB2', 'HB3', 'QB', 'HE21', 'HE22', 'QE2', 'HG2', 'HG3', 'QG', 'C', 'CA', 'CB', 'CD', 'CG', 'N', 'NE2'],
- 'R': ['?', 'H', 'HA', 'HB2', 'HB3', 'QB', 'HD2', 'HD3', 'QD', 'HG2', 'HG3', 'QG', 'HH11', 'HH12','QH1', 'HH21', 'HH22', 'QH2', 'C', 'CA', 'CB', 'CD', 'CG', 'CZ', 'N', 'NE', 'NH1', 'NH2', 'HE'],
- 'S': ['?', 'H', 'HA', 'HB2', 'HB3', 'QB', 'HG', 'C', 'CA', 'CB', 'N'],
- 'T': ['?', 'H', 'HA', 'HB', 'HG1', 'HG2', 'QG2', 'C', 'CA', 'CB', 'CG2', 'N'],
- 'V': ['?', 'H', 'HA', 'HB', 'HG1', 'QG1', 'HG2', 'QG2', 'C', 'CA', 'CB', 'CG1', 'CG2', 'N'],
- 'W': ['?', 'H', 'HA', 'HB2', 'HB3', 'QB', 'HD1', 'HE1', 'HE3', 'HH2', 'HZ2', 'HZ3', 'C', 'CA', 'CB', 'CD1', 'CD2', 'CE2', 'CE3', 'CG', 'CH2', 'CZ2', 'CZ3', 'N', 'NE1'],
- 'Y': ['?', 'H', 'HA', 'HB2', 'HB3', 'QB', 'HD1', 'HD2', 'QD', 'HE1', 'HE2', 'QE',  'HH', 'C', 'CA', 'CB', 'CD1', 'CD2', 'CE1', 'CE2', 'CG', 'CZ', 'N']}
+Allowed_atoms = {
+'A': ['?','H','HA','HB','C','CA','CB','N','QB'],
+ 'C': ['?','H','HA','HB2','HB3','QB','HG','C','CA','CB','N'],
+ 'D': ['?','H','HA','HB2','HB3','QB','HD2','C','CA','CB','CG','N'],
+ 'E': ['?','H','HA','HB2','HB3','QB','HE2','HG2','HG3','QG','C','CA','CB','CD','CG','N'],
+ 'F': ['?','H','HA','HB2','HB3','QB','HD1','HD2','QD','HE1','HE2','QE','HZ','C','CA','CB','CD1','CD2','CE1','CE2','CG','CZ','N'],
+ 'G': ['?','H','HA2','HA3','C','CA','N'],
+ 'H': ['?','H','HA','HB2','HB3','QB','QB','HD1','HD2','QD','HE1','HE2','QE','C','CA','CB','CD2','CE1','CG','N','ND1','NE2'],
+ 'I': ['?','H','HA','HB','HG12','HG13','QG1','HD1','QD1','HG2','QG2','C','CA','CB','CD1','CG1','CG2','N'],
+ 'K': ['?','H','HA','HB2','HB3','QB','HD2','HD3','QD','HE2','HE3','QE','HG2','HG3','QG','C','CA','CB','CD','CE','CG','N','NZ','QZ','HZ'],
+ 'L': ['?','H','HA','HB2','HB3','QB','HG','HD1','QD1','HD2','QD2','C','CA','CB','CD1','CD2','CG','N'],
+ 'M': ['?','H','HA','HB2','HB3','QB','HG2','HG3','QG','HE','QE','C','CA','CB','CE','CG','N'],
+ 'N': ['?','H','HA','HB2','HB3','QB','HD21','HD22','QD','C','CA','CB','CG','N','ND2'],
+ 'P': ['?','HA','HB2','HB3','QB','HD2','HD3','QD','HG2','HG3','QG','C','CA','CB','CD','CG','N'],
+ 'Q': ['?','H','HA','HB2','HB3','QB','HE21','HE22','QE2','HG2','HG3','QG','C','CA','CB','CD','CG','N','NE2'],
+ 'R': ['?','H','HA','HB2','HB3','QB','HD2','HD3','QD','HG2','HG3','QG','HH11','HH12','QH1','HH21','HH22','QH2','C','CA','CB','CD','CG','CZ','N','NE','NH1','NH2','HE'],
+ 'S': ['?','H','HA','HB2','HB3','QB','HG','C','CA','CB','N'],
+ 'T': ['?','H','HA','HB','HG1','HG2','QG2','C','CA','CB','CG2','N'],
+ 'V': ['?','H','HA','HB','HG1','QG1','HG2','QG2','C','CA','CB','CG1','CG2','N'],
+ 'W': ['?','H','HA','HB2','HB3','QB','HD1','HE1','HE3','HH2','HZ2','HZ3','C','CA','CB','CD1','CD2','CE2','CE3','CG','CH2','CZ2','CZ3','N','NE1'],
+ 'Y': ['?','H','HA','HB2','HB3','QB','HD1','HD2','QD','HE1','HE2','QE',  'HH','C','CA','CB','CD1','CD2','CE1','CE2','CG','CZ','N']}
+
 
 
 # -----------------------------------------------------------------------------
@@ -66,10 +71,14 @@ class xeasy_format_dialog(tkutil.Dialog, tkutil.Stoppable):
 
     NOESYtypes = ('2D NOESY [H,H]','3D N15NOESY [H,N,HN]','3D N15NOESY [HN,N,H]','3D C13NOESY [H,C,HC]','3D C13NOESY [HC,C,H]','3D CCNOESY [C1,C2,H2]','3D CCNOESY [H2,C2,H1]','3D NCNOESY [C,N,HN]','3D NCNOESY [HN,N,C]','3D NCNOESY [N,C,HC]','3D NCNOESY [HC,C,N]','4D CCNOESY [H1,C1,C2,H2]','4D NNNOESY [H1,N1,N2,H2]','4D NCNOESY [HC,C,N,HN]','2D DARR [C1,C2]','2D PSDS [C1,C2]','2D PAIN [N,C]','2D PAIN [C,N]','3D PAIN [C,N,HN]','3D PAIN [HN,N,C]')
     initial=NOESYtypes[3]
-    self.NOESYtype = tkutil.option_menu(self.top, "Select NOESY Type", NOESYtypes, initial)
+    self.NOESYtype = tkutil.option_menu(self.top, "NOESY Type", NOESYtypes, initial)
     self.NOESYtype.frame.pack(side = 'top', anchor = 'w')
 
-    sl = tkutil.scrolling_list(self.top, 'Chemical shift list', 5)
+    molcon = tk.Label(self.top, text ='Molecule / Condition : ', justify = 'left')
+    molcon.pack(side = 'top', anchor = 'w')
+    self.molcon = molcon
+
+    sl = tkutil.scrolling_list(self.top, 'Chemical Shift List', 5)
     sl.frame.pack(fill = 'both', expand = 1)
     sl.listbox.bind('<ButtonRelease-1>', self.resonance_cb)
     self.shift_list = sl
@@ -78,63 +87,59 @@ class xeasy_format_dialog(tkutil.Dialog, tkutil.Stoppable):
     pl.frame.pack(fill = 'both', expand = 1)
     pl.heading['text'] = 'Peak list'
     pl.listbox.bind('<ButtonRelease-1>', pl.select_peak_cb)
-    pl.listbox.bind('<ButtonRelease-2>', pl.goto_peak_cb)
     pl.listbox.bind('<Double-ButtonRelease-1>', pl.goto_peak_cb)
     self.peak_list = pl
 
-    cy = tkutil.checkbutton(self.top, 'Cyana Formatting ?', 1)
+    cy = tkutil.checkbutton(self.top, 'Cyana formatting', 1)
     cy.button.pack(side = 'top', anchor = 'w')
     self.cyana = cy
 
-    hb = tkutil.checkbutton(self.top,
-                            'Show peak heights instead of volumes?', 1)
+    hb = tkutil.checkbutton(self.top, 'Show peak heights instead of volumes', 1)
     hb.button.pack(side = 'top', anchor = 'w')
     self.heights = hb
 
-    ib = tkutil.checkbutton(self.top, 'Include unintegrated peaks?', 1)
+    ib = tkutil.checkbutton(self.top, 'Include unintegrated peaks', 1)
     ib.button.pack(side = 'top', anchor = 'w')
     self.unintegrated = ib
 
-    ab = tkutil.checkbutton(self.top, 'Include unassigned peaks?', 1)
+    ab = tkutil.checkbutton(self.top, 'Include unassigned peaks', 1)
     ab.button.pack(side = 'top', anchor = 'w')
     self.unassigned = ab
 
-    mb = tkutil.checkbutton(self.top,
-                            'Include assignments without a residue number?', 1)
-    mb.button.pack(side = 'top', anchor = 'w')
-    self.unnumbered = mb
-
-    nb = tkutil.checkbutton(self.top, 'Show peak notes?', 0)
+    nb = tkutil.checkbutton(self.top, 'Show peak notes', 0)
     nb.button.pack(side = 'top', anchor = 'w')
     self.note = nb
+
+    ka = tkutil.checkbutton(self.top, 'Keep assignments', 0)
+    ka.button.pack(side = 'top', anchor = 'w')
+    self.keep = ka
 
     ri = tkutil.checkbutton(self.top, 'Add 10000 to assigned peak index', 0)
     ri.button.pack(side = 'top', anchor = 'w')
     self.reindex = ri
 
-    eh = Tkinter.Label(self.top, text = 'Omit peak if note has a word from:')
+    eh = tk.Label(self.top, text = 'Omit peak if note has a word from:')
     eh.pack(side = 'top', anchor = 'w')
     ef = tkutil.entry_field(self.top, '  ', width = 30)
     ef.frame.pack(side = 'top', anchor = 'w')
     self.note_words = ef
-    et = Tkinter.Label(self.top, text = '(comma separated list of words)')
+    et = tk.Label(self.top, text = '(comma separated list of words)')
     et.pack(side = 'top', anchor = 'w')
 
-    bl = tkutil.scrolling_list(self.top, 'Bad Chemical shift list', 5)
+    bl = tkutil.scrolling_list(self.top, 'Bad Chemical Shift List', 5)
     bl.frame.pack(fill = 'both', expand = 1)
     bl.listbox.bind('<ButtonRelease-1>', self.bad_resonance_cb)
     self.bad_shift_list = bl
 
     er = tkutil.entry_row(self.top, 'PPM tolerance: ',
-                                    ('1H', '0.02', 5),
-                                    ('13C', '0.20', 5),
-                                    ('15N', '0.20', 5))
+                                    ('1H','0.02', 5),
+                                    ('13C','0.20', 5),
+                                    ('15N','0.20', 5))
     er.frame.pack(side = 'top', anchor = 'w')
     self.ppm_range = er
 
-
     # self.ppm_range = er
-    progress_label = Tkinter.Label(self.top, anchor = 'nw')
+    progress_label = tk.Label(self.top, anchor = 'nw')
     progress_label.pack(side = 'top', anchor = 'w')
 
     br = tkutil.button_row(self.top,
@@ -161,17 +166,16 @@ class xeasy_format_dialog(tkutil.Dialog, tkutil.Stoppable):
     show_heights = self.heights.state()
     show_unintegrated = self.unintegrated.state()
     show_unassigned = self.unassigned.state()
-    show_unnumbered = self.unnumbered.state()
     reindex_peaks = self.reindex.state()
     show_note = self.note.state()
     note_words = self.note_words.variable.get().split(',')
+    keep_assign = self.keep.state()
+    self.molcon.config(text='Molecule / Condition : {:} / {:}'.format(spectrum.condition.molecule.name,spectrum.condition.name))
     self.tolerance={'H':float(self.ppm_range.variables[0].get()),'C':float(self.ppm_range.variables[1].get()),'N':float(self.ppm_range.variables[2].get())}
-    print self.tolerance
-    self.stoppable_call(self.show_chemical_shifts, spectrum.condition,
-                        show_unnumbered)
+    self.stoppable_call(self.show_chemical_shifts, spectrum.condition)
     self.stoppable_call(self.show_peaks, spectrum, cyana_header,
                         show_heights, show_unintegrated, show_unassigned,
-                        show_unnumbered, show_note, note_words, reindex_peaks)
+                        show_note, keep_assign, note_words, reindex_peaks)
     self.stoppable_call(self.show_bad_chemical_shifts, spectrum.condition,
                         self.sequence, self.tolerance)
 
@@ -179,7 +183,7 @@ class xeasy_format_dialog(tkutil.Dialog, tkutil.Stoppable):
   #
   def save_shifts_cb(self):
     
-    path = tkutil.save_file(self.top, 'Save XEASY Chemical Shifts', 'peaklist')
+    path = tkutil.save_file(self.top, 'Save XEASY Chemical Shifts','peaklist')
     if path:
       self.shift_list.write_file(path, 'w', write_heading = 0)
 
@@ -187,7 +191,7 @@ class xeasy_format_dialog(tkutil.Dialog, tkutil.Stoppable):
   #
   def save_peaks_cb(self):
     
-    path = tkutil.save_file(self.top, 'Save XEASY Peak List', 'peaklist')
+    path = tkutil.save_file(self.top, 'Save XEASY Peak List','peaklist')
     if path:
       self.peak_list.write_file(path, 'w', write_heading = 0)
 
@@ -209,10 +213,20 @@ class xeasy_format_dialog(tkutil.Dialog, tkutil.Stoppable):
 
   # ---------------------------------------------------------------------------
   #
-  def show_chemical_shifts(self, condition, show_unnumbered):
+  def sort_res_list(self, inreslist):
 
-    reslist = condition.resonance_list()
-    reslist.sort(sputil.compare_resonances)
+    reslist = [res for res in inreslist if isinstance(res.group.number,int) == True]
+    badres = [res for res in inreslist if isinstance(res.group.number,int) == False]
+    reslist.sort(key = lambda x: (x.group.number, x.atom.name))
+    reslist.extend(badres)
+    return reslist
+
+  # ---------------------------------------------------------------------------
+  #
+  def show_chemical_shifts(self, condition):
+
+    reslist = self.sort_res_list(condition.resonance_list())
+
     self.assign_atom_ids(reslist)
       
     self.shift_list.clear()
@@ -222,9 +236,10 @@ class xeasy_format_dialog(tkutil.Dialog, tkutil.Stoppable):
         cyana_dict = cyana.CyanaDictionary();
     for r in reslist:
       self.check_for_stop()
-      if show_unnumbered or r.group.number != None:
-        line = self.shift_line(r,cyana_dict);
-        self.shift_list.append(line, r)
+      if r.atom.name != None:
+        if r.group.number != None:
+          line = self.shift_line(r,cyana_dict);
+          self.shift_list.append(line, r)
 
   # ---------------------------------------------------------------------------
   #
@@ -248,8 +263,8 @@ class xeasy_format_dialog(tkutil.Dialog, tkutil.Stoppable):
   # ---------------------------------------------------------------------------
   #
   def show_bad_chemical_shifts(self, condition, sequence, tolerance):
-    reslist = condition.resonance_list()
-    reslist.sort(key = lambda x: x.group.name)
+
+    reslist = self.sort_res_list(condition.resonance_list())
 
     groups_list = [szA+str(szID) for (szID,szA) in sequence]
     self.assign_atom_ids(reslist)
@@ -259,14 +274,14 @@ class xeasy_format_dialog(tkutil.Dialog, tkutil.Stoppable):
     for r in reslist:
       self.check_for_stop()
       if r.group.name[0] in Allowed_atoms.keys():
-         if r.atom.name not in Allowed_atoms[r.group.name[0]]:
-            line = self.bad_shift_line(r);
+         if r.atom.name not in Allowed_atoms[r.group.symbol]:
+            line = self.bad_shift_line(r) + ' atom name';
             self.bad_shift_list.append(line, r)
       if r.deviation >= tolerance[r.atom.nucleus[-1]]:
-        line = self.bad_shift_line(r);
+        line = self.bad_shift_line(r) + ' deviation';
         self.bad_shift_list.append(line, r)
       if r.group.name not in groups_list:
-        line = self.bad_shift_line(r);
+        line = self.bad_shift_line(r)  + ' group name';
         self.bad_shift_list.append(line, r)
 
   # ---------------------------------------------------------------------------
@@ -302,8 +317,7 @@ class xeasy_format_dialog(tkutil.Dialog, tkutil.Stoppable):
   #
   def show_peaks(self, spectrum, cyana_header,
                  show_heights, show_unintegrated, show_unassigned,
-                 show_unnumbered, show_note, note_words, reindex_peaks):
-
+                show_note, keep_assign, note_words, reindex_peaks):
     headerdict = {'2D NOESY [H,H]':['#Number of dimensions 3','#FORMAT xeasy2D','#INAME 1 H1','#INAME 2 H2','#SPECTRUM NOESY H1 H2','#TOLERANCE 0.0300 0.0200'],
                   '3D N15NOESY [H,N,HN]':['#Number of dimensions 3','#FORMAT xeasy3D','#INAME 1 H','#INAME 2 N','#INAME 3 HN','#SPECTRUM N15NOESY H N HN','#TOLERANCE 0.0300 0.3000 0.0200'],
                   '3D N15NOESY [HN,N,H]':['#Number of dimensions 3','#FORMAT xeasy3D','#INAME 1 HN','#INAME 2 N','#INAME 3 H','#SPECTRUM N15NOESY HN N H','#TOLERANCE 0.0200 0.3000 0.0300'],
@@ -347,14 +361,16 @@ class xeasy_format_dialog(tkutil.Dialog, tkutil.Stoppable):
     self.stoppable_loop('peaks', 100)
     for peak in spectrum_peak_list:
       self.check_for_stop()
+
       peak_id = peak_id + 1
-      line = self.peak_line(peak, peak_id, show_heights, pseudo4D)
+      line = self.peak_line(peak, peak_id, show_heights, pseudo4D, keep_assign)
       if reindex_peaks:
         if peak.is_assigned:
           peak_id2 = peak_id + 10000
-          line = self.peak_line(peak, peak_id2, show_heights, pseudo4D)
+          line = self.peak_line(peak, peak_id2, show_heights, pseudo4D, keep_assign)
       if show_note and len(peak.note) > 0:
         line = line + '   # ' + peak.note
+
       import re
       if len(note_words[0]) > 0 and len(peak.note) > 0:
         for words in note_words:
@@ -363,9 +379,10 @@ class xeasy_format_dialog(tkutil.Dialog, tkutil.Stoppable):
 
       self.peak_list.append(line, peak)
 
+
   # ---------------------------------------------------------------------------
   #
-  def peak_line(self, peak, peak_id, show_heights, pseudo4D):
+  def peak_line(self, peak, peak_id, show_heights, pseudo4D, keep_assign):
 
     if '?' not in peak.assignment:
       color_code = 1
@@ -386,21 +403,18 @@ class xeasy_format_dialog(tkutil.Dialog, tkutil.Stoppable):
 
     atom_ids = []
     for r in peak.resonances():
-      if r:
+      if r and keep_assign:
         atom_ids.append(r.atom.xeasy_id)
       else:
         atom_ids.append(0)
 
-    freq_text = pyutil.sequence_string(peak.frequency, '%8.3f')
+    freq_text = pyutil.sequence_string(peak.frequency, ' %8.3f')
     if pseudo4D == True:
-      freq_text = freq_text + '%8.3f' %(-2.000)
+      freq_text = freq_text + ' %8.3f' %(-2.000)
       atom_ids.append(0)
     id_text = pyutil.sequence_string(atom_ids, ' %5d')
-    
-    format = '%7d%s %1d %1s % 13.5E % 13.2E %1s 0%s'
-    values = (peak_id, freq_text, color_code, spectrum_type,
-              intensity, intensity_error, intensity_method, id_text)
-    line = format % values
+
+    line = '{:7d}{:} {:1d} {:}  {: 13.6E} {: 13.2E} {:} 0{:}'.format(peak_id, freq_text, color_code, spectrum_type,intensity, intensity_error, intensity_method, id_text)
     
     return line
 

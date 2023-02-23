@@ -13,7 +13,7 @@ import expectedpeaks
 # St Jude Children's Research Hospital 
 # Department of Structural Biology Memphis, TN 
 #
-# Last updates: July 1, 2022
+# Last updates: February 9, 2023
 #
 #
 # ------------------------------------------------------------------------------
@@ -130,17 +130,14 @@ class filter_peaks_dialog(tkutil.Dialog, tkutil.Stoppable):
 
 		self.session = session
 		self.selection_notice = None
-		tkutil.Dialog.__init__(self, session.tk, 'Filter 3D NOESY peak list')
+		tkutil.Dialog.__init__(self, session.tk, 'Filter 3D peak list')
 
 		explain = ('Colors cross peaks red which have frequencies not found reference 2Ds\n'+ 
-							 'User can use pC command to select these peaks and delete them'
-							'(last edits March 2, 2021)\n')
+							 'User can use pC command to select these peaks and delete them\n'
+							'(last edits February 9, 2023)\n')
 		w = Tkinter.Label(self.top, text = explain, justify = 'left')
 		w.pack(side = 'top', anchor = 'w')
 
-		explain = ('3D Spectrum to be filtered')
-		w = Tkinter.Label(self.top, text = explain, justify = 'left')
-		w.pack(side = 'top', anchor = 'w')    
 		self.spectrum_choice_3D = sputil.spectrum_menu(session, self.top, '3D Spectrum:    ')
 		self.spectrum_choice_3D.frame.pack(side = 'top', anchor = 'w')
 
@@ -310,7 +307,7 @@ class filter_peaks_dialog(tkutil.Dialog, tkutil.Stoppable):
 			for w2w3 in w2w3_peaks:
 				if (abs(peak.frequency[1] - w2w3.frequency[w2idx]) < s.tolerance[w2nuc]) and (abs(peak.frequency[2] - w2w3.frequency[w3idx]) < s.tolerance[w3nuc]) and i not in w2w3_keep:
 					w2w3_keep.append(i)
-			message = (' Checked %d peaks of %d peaks for w2w3 consistancy' % (self.checked , self.numpeaks))
+			message = (' Checked %d peaks of %d peaks for w2w3 consistency' % (self.checked , self.numpeaks))
 			self.progress_report(message)
 		self.checked = 0
 		for x in w2w3_keep:
@@ -319,7 +316,7 @@ class filter_peaks_dialog(tkutil.Dialog, tkutil.Stoppable):
 			for w1 in w1_freqs:
 				if abs(peak.frequency[0] - w1) < s.tolerance['NOE'] and x not in Keep_list:
 					Keep_list.append(x)
-			message = (' Checked %d peaks of %d peaks for w1 consistancy' % (self.checked , self.numpeaks))
+			message = (' Checked %d peaks of %d peaks for w1 consistency' % (self.checked , self.numpeaks))
 			self.progress_report(message)
 
 		for i in range(len(peaks)):
@@ -327,30 +324,32 @@ class filter_peaks_dialog(tkutil.Dialog, tkutil.Stoppable):
 			note = peak.note
 			if i not in Keep_list:
 				peak.color = 'red'
-				peak.note = 'Bad w1 frequency ' + note
+				if 'Bad w1 frequency;' not in note:
+					peak.note = 'Bad w1 frequency; ' + note
 				peak.selected = 1
 				if i not in w2w3_keep:
 					peak.color = 'red'
-					peak.note = 'Bad w2 w3 frequencies ' + note
+					if 'Bad w2 w3 frequencies;' not in note:
+						peak.note = 'Bad w2 w3 frequencies; ' + note
 					peak.selected = 1
 		for x in Keep_list:
 			peak = peaks[x]
 			if peak.color == 'red' and 'Bad w' in peak.note:
 				peak.color = 'white'
-				peak.note = peak.note.replace('Bad w1 frequency', '').replace('Bad w2 w3 frequencies', '')
+				peak.note = peak.note.replace('Bad w1 frequency; ', '').replace('Bad w2 w3 frequencies; ', '')
 			peak.selected = 0
 		if w1nuc == w2nuc:
 			for x in Keep_list:
 				peak = peaks[x]
 				if abs(peak.frequency[0] - peak.frequency[1]) < s.tolerance[w2nuc]:
 					peak.color = 'cyan'
-					peak.note = 'diagonal'
+					peak.note = 'diagonal; ' + peak.note
 		if w1nuc == w3nuc:
 			for x in Keep_list:
 				peak = peaks[x]
 				if abs(peak.frequency[0] - peak.frequency[2]) < s.tolerance[w3nuc]:
 					peak.color = 'cyan'
-					peak.note = 'diagonal'
+					peak.note = 'diagonal; ' + peak.note
 
 		tkMessageBox.showinfo("Filter Peaks", "Found %s bad peaks in original %s peaks" % (len(peaks) -len(Keep_list), len(peaks)))
 

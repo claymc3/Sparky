@@ -7,7 +7,7 @@ import pyutil
 import sparky
 import sputil
 import tkutil
-import tkinter.messagebox
+import tkMessageBox
 from numpy import median
 
 # ------------------------------------------------------------------------------
@@ -17,7 +17,7 @@ from numpy import median
 # St Jude Children's Research Hospital 
 # Department of Structural Biology Memphis, TN 
 #
-# Last updates: September 9, 2022
+# Last updates: February 21, 2023
 #
 #
 # ------------------------------------------------------------------------------
@@ -136,7 +136,7 @@ class assignment_distance_dialog(tkutil.Dialog, tkutil.Stoppable):
 		self.selection_notice = None
 		tkutil.Dialog.__init__(self, session.tk, 'Simulate NOESY from UPL')
 
-		explain = ('(last edits September 9, 2022)\n')
+		explain = ('(last edits Febraury 21, 2023)\n')
 		w = tkinter.Label(self.top, text = explain, justify = 'left')
 		w.pack(side = 'top', anchor = 'w')
 
@@ -158,7 +158,7 @@ class assignment_distance_dialog(tkutil.Dialog, tkutil.Stoppable):
 		self.spectrum_choice_3DNOESY.frame.pack(side = 'top', anchor = 'w')
 
 	# Reference Spectrum defines w2, w3 of 3D NOESY
-		explain = ('Select 2D spectrum wich defines the w2, w3 dimensions of NOESY')
+		explain = ('Select 2D spectrum which defines the w2, w3 dimensions of NOESY')
 		w = tkinter.Label(self.top, text = explain, justify = 'left')
 		w.pack(side = 'top', anchor = 'w')
 		self.spectrum_choice_ref = spectrum_menu_2D(session, self.top, '2D editing: ')
@@ -170,6 +170,16 @@ class assignment_distance_dialog(tkutil.Dialog, tkutil.Stoppable):
 		w.pack(side = 'top', anchor = 'w')    
 		self.sc = self.spectrum_choice_table(self.top)
 		self.sc.pack(side = 'top', anchor = 'w')
+
+		eh = tkinter.Label(self.top, text = 'Omit peak if note has a word from:')
+		eh.pack(side = 'top', anchor = 'w')
+		ef = tkutil.entry_field(self.top, '', width = 30)
+		ef.frame.pack(side = 'top', anchor = 'w')
+		self.note_words = ef
+		et = tkinter.Label(self.top, text = '(comma separated list of words)\n')
+		et.pack(side = 'top', anchor = 'w')
+		et = tkinter.Label(self.top, text = 'note = tag upl [ ]; spec [ ]\n tag:\n   spec - upl > 0.5 bad; spec - upl <= 0.5 long\n   spec - upl < -0.5 good; spec - upl > -0.5 short\n\n upl [ ] =  value from input upl\n spec [ ] = distance calculated from peak intensity\n',justify = 'left')
+		et.pack(side = 'top', anchor = 'w')
 
 		progress_label = tkinter.Label(self.top, anchor = 'nw')
 		progress_label.pack(side = 'top', anchor = 'w',padx=2)
@@ -232,6 +242,7 @@ class assignment_distance_dialog(tkutil.Dialog, tkutil.Stoppable):
 		settings.spectrum_noe_list=[spectrum for spectrum in spectra]
 		settings.upl_path = self.upl_path.get()
 		settings.dref = float(self.median_dist.get())
+		settings.note_words = self.note_words.variable.get().split(',')
 		return settings
 
 
@@ -249,6 +260,7 @@ class assignment_distance_dialog(tkutil.Dialog, tkutil.Stoppable):
 	def Generate_NOESY_cb(self):
 
 		s = self.get_settings()
+		self.session.unselect_all_ornaments()
 		for peak in self.session.selected_peaks():
 			if peak.label: peak.label.selected = 0
 			peak.selected = 0
@@ -320,7 +332,20 @@ class assignment_distance_dialog(tkutil.Dialog, tkutil.Stoppable):
 			save_new.write('<end view>\n<ornament>\n<end ornament>\n<end spectrum>\n')
 			save_new.close()
 			self.session.open_spectrum(save_path_new)
-		Heights = [float(peak.data_height) for peak in s.spectrum_3DNOESY.peak_list()]
+
+		import re
+		Heights,passpeaks = [], []
+		for x in range(len(s.spectrum_3DNOESY.peak_list())):
+			peak = s.spectrum_3DNOESY.peak_list()[x]
+			if len(s.note_words[0]) > 0 and len(peak.note) > 0:
+				for words in s.note_words:
+					if re.search(words.lower().strip(),peak.note.lower()):
+						passpeaks.append(x)
+		for x in range(len(s.spectrum_3DNOESY.peak_list())):
+			if x not in passpeaks:
+				peak = s.spectrum_3DNOESY.peak_list()[x]
+				Heights.append(peak.data_height)
+
 		Calcnst = float(median(Heights) * (s.dref**6))
 		noise = s.spectrum_3DNOESY.noise
 		spectrum = sputil.name_to_spectrum(spectrum_ref_name+'_sim', self.session)
@@ -333,42 +358,46 @@ class assignment_distance_dialog(tkutil.Dialog, tkutil.Stoppable):
 			self.create_peak(assignment,frequency, note, "white", spectrum)
 		for peak in spectrum.peak_list():
 			upl = float(peak.note)
-			SNR = peak.data_height/noise
-			obsD = (Calcnst/abs(peak.data_height))**(1.0/6.0)
-			print '------ '+peak.assignment+' ------'
-			print "{:14.2f}".format(obsD)
-			peak.note = '    {:} ;{:3.2f}'.format(peak.note,obsD)
-			# if abs(obsD - upl) <= 0.25:
-			# 	peak.color = 'darkgreen'
-			# 	peak.label.color = peak.color
-			# 	peak.note = '{:} ;{:3.2f}'.format(peak.note,obsD)
-			if SNR >= 4: 
-				if abs(obsD - upl) <= 0.5:
-					peak.color = 'darkgreen'
-					peak.label.color = peak.color
-				if abs(obsD - upl) > 0.5 and abs(obsD - upl) <= 1.0:
-					peak.color = 'gold'
-					peak.label.color = peak.color
-				if abs(obsD - upl) >= 1.0:
-					if obsD - upl > 0.9:
-						peak.color = 'darkred'
-						peak.label.color = peak.color
-						peak.note = '    long {:}'.format(peak.note)
-					if obsD - upl < -0.9:
-						peak.color = 'darkorange'
-						peak.label.color = peak.color
-						peak.note = '    short {:}'.format(peak.note)
-			if SNR <= 4:
+			peak_height = peak.data_height
+			SNR = peak_height/noise
+			if peak_height <= 0.0: 
 				peak.color = 'darkred'
 				peak.label.color = peak.color
-				peak.note = '    missing {:}'.format(peak.note)
+				peak.note = '    missing'
+				pass 
+			else: 
+				obsD = (Calcnst/abs(peak_height))**(1.0/6.0)
+				if SNR > 10:
+					peak.note = '    upl {:} ;spec {:3.2f}'.format(peak.note,obsD)
+					if obsD - upl > 0.0:
+						if obsD - upl <= 0.5:
+							peak.color = 'darkorange'
+							peak.label.color = peak.color
+							peak.note = '     long {:}'.format(peak.note)
+						if obsD - upl > 0.5:
+							peak.color = 'red'
+							peak.label.color = peak.color
+							peak.note = '      bad {:}'.format(peak.note)
+					if obsD - upl < 0.0: 
+						if abs(obsD - upl) <= 0.5:
+							peak.color = 'gold'
+							peak.label.color = peak.color
+							peak.note = '    short {:}'.format(peak.note)
+						if abs(obsD - upl) > 0.5:
+							peak.color = 'darkgreen'
+							peak.label.color = peak.color
+							peak.note = '    good {:}'.format(peak.note)
+				if SNR <= 10:
+					peak.color = 'darkred'
+					peak.label.color = peak.color
+					peak.note = '    missing: SNR < 10'
 
 		import datetime as time
 		self.count = len(noe_peak_list)
 		self.time = time.datetime.now().strftime("%m-%d-%y %H:%M")
 		message = ('Created %d new cross peaks\nLast run %s' % (self.count, self.time))
 		self.progress_report(message)
-		# tkinter.messagebox.showinfo('Task Complete', "Finished Simulating NOESY")
+		# tkMessageBox.showinfo('Task Complete', "Finished Simulating NOESY")
 	# ------------------------------------------------------------------------------
 	# return atoms_list entry containing expansion of pseudo atoms for entries 
 	# found in the PDB 
@@ -408,7 +437,7 @@ class assignment_distance_dialog(tkutil.Dialog, tkutil.Stoppable):
 							NOESY3D_peaklist.append([a1+'-'+a2+'-'+a3, a1, a2, a3, float(dist)])
 
 		if len(NOESY3D_peaklist) < 2:
-			tkinter.messagebox.showinfo('Input Error', "No NOESY entries generated \nCheck input selections and try again")
+			tkMessageBox.showinfo('Input Error', "No NOESY entries generated \nCheck input selections and try again")
 			return
 		return tuple(NOESY3D_peaklist)
 

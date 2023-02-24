@@ -175,6 +175,7 @@ class assignment_distance_dialog(tkutil.Dialog, tkutil.Stoppable):
 		eh.pack(side = 'top', anchor = 'w')
 		ef = tkutil.entry_field(self.top, '', width = 30)
 		ef.frame.pack(side = 'top', anchor = 'w')
+		ef.variable.set('diagonal')
 		self.note_words = ef
 		et = tkinter.Label(self.top, text = '(comma separated list of words)\n')
 		et.pack(side = 'top', anchor = 'w')
@@ -283,22 +284,22 @@ class assignment_distance_dialog(tkutil.Dialog, tkutil.Stoppable):
 		noe_atoms = {}
 		for noe_spectrum in s.spectrum_noe_list:
 			for peak in noe_spectrum.peak_list():
-				if '?' not in peak.assignment:
-					resn = peak.resonances()[0].group.name
-					resi = peak.resonances()[0].group.number
-					resi2 = peak.resonances()[0].group.symbol +   str(int(peak.resonances()[0].group.number)+1000) ## for dimers
+				if peak.is_assigned:
+					resn = peak.resonances()[1].group.name
+					resi = peak.resonances()[1].group.number
+					resi2 = peak.resonances()[1].group.symbol +   str(int(peak.resonances()[0].group.number)+1000) ## for dimers
 					na1 = peak.resonances()[0].atom.name
 					na2 = peak.resonances()[1].atom.name
 					if s.spectrum_3DNOESY.nuclei[0] != '1H':
-						group = '%s %s %s' %(peak.resonances()[0].group.symbol, resi, na1)
+						group = '%s %s %s' %(peak.resonances()[1].group.symbol, resi, na1)
 						noe_atoms[group]= resn+na1
-						group = '%s %s %s' %(peak.resonances()[0].group.symbol, resi, na2)
+						group = '%s %s %s' %(peak.resonances()[1].group.symbol, resi, na2)
 						noe_atoms[group]= resn+na1
 						Freq_dict[resn+na1] = peak.frequency[0]
 					if s.spectrum_3DNOESY.nuclei[0] == '1H':
-						group = '%s %s %s' %(peak.resonances()[0].group.symbol, resi, na1)
+						group = '%s %s %s' %(peak.resonances()[1].group.symbol, resi, na1)
 						noe_atoms[group]= resn+na2
-						group = '%s %s %s' %(peak.resonances()[0].group.symbol, resi, na2)
+						group = '%s %s %s' %(peak.resonances()[1].group.symbol, resi, na2)
 						noe_atoms[group]= resn+na2
 						Freq_dict[resn+na2] = peak.frequency[1]
 

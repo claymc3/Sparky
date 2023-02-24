@@ -297,10 +297,12 @@ class filter_peaks_dialog(tkutil.Dialog, tkutil.Stoppable):
 		## Generate a list of peak in NOESY that have acceptable values of w1, w2, and w3. 
 		peaks = s.spectrum_3D.peak_list()
 		self.numpeaks = len(peaks)
-		Keep_list = []
-		w2w3_keep = []
-		w2w3_peaks = s.w2w3_spectrum.peak_list()
-
+		Keep_list,w2w3_keep, w2w3_peaks = [], [], []
+		for peak in s.w2w3_spectrum.peak_list():
+			if peak.is_assigned and (peak.resonances()[0].group.name == peak.resonances()[1].group.name):
+				w2w3_peaks.append(peak)
+			if not peak.is_assigned:
+				w2w3_peaks.append(peak)
 		for i in range(len(peaks)):
 			self.checked = i + 1
 			peak = peaks[i] ## this allows for count to be shown in progress label 
@@ -323,10 +325,11 @@ class filter_peaks_dialog(tkutil.Dialog, tkutil.Stoppable):
 			peak = peaks[i]
 			note = peak.note
 			if i not in Keep_list:
-				peak.color = 'red'
-				if 'Bad w1 frequency;' not in note:
-					peak.note = 'Bad w1 frequency; ' + note
-				peak.selected = 1
+				if i in w2w3_keep:
+					peak.color = 'red'
+					if 'Bad w1 frequency;' not in note:
+						peak.note = 'Bad w1 frequency; ' + note
+					peak.selected = 1
 				if i not in w2w3_keep:
 					peak.color = 'red'
 					if 'Bad w2 w3 frequencies;' not in note:
@@ -343,13 +346,16 @@ class filter_peaks_dialog(tkutil.Dialog, tkutil.Stoppable):
 				peak = peaks[x]
 				if abs(peak.frequency[0] - peak.frequency[1]) < s.tolerance[w2nuc]:
 					peak.color = 'cyan'
-					peak.note = 'diagonal; ' + peak.note
+					if 'diagonal' not in peak.note:
+						peak.note = 'diagonal; ' + peak.note
 		if w1nuc == w3nuc:
 			for x in Keep_list:
 				peak = peaks[x]
 				if abs(peak.frequency[0] - peak.frequency[2]) < s.tolerance[w3nuc]:
 					peak.color = 'cyan'
-					peak.note = 'diagonal; ' + peak.note
+					if 'diagonal' not in peak.note:
+						peak.note = 'diagonal; ' + peak.note
+
 
 		tkMessageBox.showinfo("Filter Peaks", "Found %s bad peaks in original %s peaks" % (len(peaks) -len(Keep_list), len(peaks)))
 

@@ -129,7 +129,7 @@ class assignment_distance_dialog(tkutil.Dialog, tkutil.Stoppable):
 		self.selection_notice = None
 		tkutil.Dialog.__init__(self, session.tk, 'Simulate 3D NOESY from PDB')
 
-		explain = ('(last edits January 26, 2023)\n')
+		explain = ('(last edits February 24, 2023)\n')
 		w = Tkinter.Label(self.top, text = explain, justify = 'left')
 		w.pack(side = 'top', anchor = 'w')
 
@@ -154,8 +154,8 @@ class assignment_distance_dialog(tkutil.Dialog, tkutil.Stoppable):
 		self.model_number = mn.variable
 		mn.frame.pack(side = 'top', anchor = 'w')
 
-	## Reference Spectra Containing NOESY Assingments 
-		w = Tkinter.Label(self.top, text = 'Select 2D Spectra Containing Assingments', justify = 'left')
+	## Reference Spectra Containing NOESY Assignments 
+		w = Tkinter.Label(self.top, text = 'Select 2D Spectra Containing Assignments', justify = 'left')
 		w.pack(side = 'top', anchor = 'w')
 		self.HN_spectrum = spectrum_menu_2D(session, self.top, 'HN: ')
 		self.HN_spectrum.frame.pack(side = 'top', anchor = 'w',pady = 2)
@@ -165,8 +165,10 @@ class assignment_distance_dialog(tkutil.Dialog, tkutil.Stoppable):
 		self.Aro_spectrum.frame.pack(side = 'top', anchor = 'w',pady = 2)
 		self.Other_spectrum = spectrum_menu_2D(session, self.top, 'Other: ')
 		self.Other_spectrum.frame.pack(side = 'top', anchor = 'w',pady = 2)
+		self.Other_spectrum2 = spectrum_menu_2D(session, self.top, 'Other2: ')
+		self.Other_spectrum2.frame.pack(side = 'top', anchor = 'w',pady = 2)
 
-		im = tkutil.checkbutton(self.top, 'Mono-mythyl', 0)
+		im = tkutil.checkbutton(self.top, 'Mono-methyl', 0)
 		im.button.pack(side = 'top', anchor = 'w')
 		self.mono = im
 		ha = tkutil.checkbutton(self.top, 'Use Heavy Atoms', 0)
@@ -205,11 +207,13 @@ class assignment_distance_dialog(tkutil.Dialog, tkutil.Stoppable):
 		edim_ali = tkutil.checkbutton2(noesyframe, 'Ail/Me',  0,2,2)
 		edim_aro = tkutil.checkbutton2(noesyframe, 'Aromatic', 0,2,3)
 		edim_other = tkutil.checkbutton2(noesyframe,  'Other',  0,2,4)
+		edim_other2 = tkutil.checkbutton2(noesyframe,  'Other',  0,2,5)
 		noe_nh = tkutil.checkbutton2(noesyframe,  'HN',  0,3,1)
 		noe_ali = tkutil.checkbutton2(noesyframe,  'Ail/Me', 0,3,2)
 		noe_aro = tkutil.checkbutton2(noesyframe, 'Aromatic', 0,3,3)
 		noe_other = tkutil.checkbutton2(noesyframe, 'Other', 0,3,4)
-		NOESY_Specs.append((spectrum, max_dist, diagonal ,edim_nh ,edim_ali ,edim_aro, edim_other, noe_nh, noe_ali,noe_aro, noe_other))
+		noe_other2 = tkutil.checkbutton2(noesyframe, 'Other2', 0,3,5)
+		NOESY_Specs.append((spectrum, max_dist, diagonal ,edim_nh ,edim_ali ,edim_aro, edim_other, edim_other2, noe_nh, noe_ali,noe_aro, noe_other,noe_other2))
 		noesyframe.pack(pady=5, padx = 5)
 
 	# ------------------------------------------------------------------------------
@@ -222,6 +226,7 @@ class assignment_distance_dialog(tkutil.Dialog, tkutil.Stoppable):
 		settings.Ali_spectrum = self.Ali_spectrum.spectrum()
 		settings.Aro_spectrum = self.Aro_spectrum.spectrum()
 		settings.Other_spectrum = self.Other_spectrum.spectrum()
+		settings.Other_spectrum2 = self.Other_spectrum2.spectrum()
 		settings.pdb_path = self.pdb_path.get()
 		settings.mono=self.mono.state()
 		settings.chains = self.chains.get().replace(',','')
@@ -259,22 +264,24 @@ class assignment_distance_dialog(tkutil.Dialog, tkutil.Stoppable):
 		if s.heavyatoms == True:
 			protonated = False
 
-		for (spectrum, max_dist, diagonal ,edim_nh ,edim_ali ,edim_aro, edim_other, noe_nh, noe_ali, noe_aro, noe_other) in NOESY_Specs:
+		for (spectrum, max_dist, diagonal ,edim_nh ,edim_ali ,edim_aro, edim_other, edim_other2, noe_nh, noe_ali,noe_aro, noe_other,noe_other2) in NOESY_Specs:
 			NOESY_Spectrum = spectrum.spectrum()
 			ref_spectrum, noe_spectra = '', []
 			if edim_nh.state(): ref_spectrum = s.HN_spectrum
 			if edim_ali.state(): ref_spectrum = s.Ali_spectrum
 			if edim_aro.state(): ref_spectrum = s.Aro_spectrum
 			if edim_other.state(): ref_spectrum = s.Other_spectrum
+			if edim_other2.state(): ref_spectrum = s.Other_spectrum2
 			if noe_nh.state(): noe_spectra.append(s.HN_spectrum)
 			if noe_ali.state(): noe_spectra.append(s.Ali_spectrum)
 			if noe_aro.state(): noe_spectra.append(s.Aro_spectrum)
 			if noe_other.state(): noe_spectra.append(s.Other_spectrum)
+			if noe_other2.state(): noe_spectra.append(s.Other_spectrum2)
 
 			Freq_dict = {}
 			editing_atoms = []
 			for peak in ref_spectrum.peak_list():
-				if '?' not in peak.assignment:
+				if '?' not in peak.assignment: ## do not pass any assignments with missing information
 					resn = peak.resonances()[0].group.name
 					resi = peak.resonances()[0].group.number
 					if isinstance(resi,int) == True and isinstance(resn[0],str) == True:
@@ -291,17 +298,17 @@ class assignment_distance_dialog(tkutil.Dialog, tkutil.Stoppable):
 			noe_atoms = []
 			for noe_spectrum in noe_spectra:
 				for peak in noe_spectrum.peak_list():
-					if '?' not in peak.assignment:
-						resn = peak.resonances()[0].group.name
-						resi = peak.resonances()[0].group.number
+					if peak.is_assigned: # pass anything with an assignment but leave out unassigned peaks 
+						resn = peak.resonances()[1].group.name
+						resi = peak.resonances()[1].group.number
 						if isinstance(resi,int) == True and isinstance(resn[0],str) == True:
-							resi2 = peak.resonances()[0].group.symbol +   str(int(peak.resonances()[0].group.number)+1000) ## for dimers
+							resi2 = peak.resonances()[1].group.symbol +   str(int(peak.resonances()[1].group.number)+1000) ## for dimer
 							na1 = peak.resonances()[0].atom.name
 							na2 = peak.resonances()[1].atom.name
 							if protonated == True:
-								group = '%s %s %s' %(peak.resonances()[0].group.symbol, resi, na2)
+								group = '%s %s %s' %(peak.resonances()[1].group.symbol, resi, na2)
 							if protonated == False:
-								group = '%s %s %s' %(peak.resonances()[0].group.symbol, resi, na1)
+								group = '%s %s %s' %(peak.resonances()[1].group.symbol, resi, na1)
 							if NOESY_Spectrum.nuclei[0] != '1H':
 								noe_atoms.append([group,resn+na1])
 								Freq_dict[resn+na1] = peak.frequency[0]
@@ -310,9 +317,9 @@ class assignment_distance_dialog(tkutil.Dialog, tkutil.Stoppable):
 								Freq_dict[resn+na2] = peak.frequency[1]
 							if len(s.chains) == 2:
 								if protonated == True:
-									group2 = '%s %s %s' %(peak.resonances()[0].group.symbol, resi2, na2)
+									group2 = '%s %s %s' %(peak.resonances()[1].group.symbol, resi2, na2)
 								if protonated == False:
-									group2 = '%s %s %s' %(peak.resonances()[0].group.symbol, resi2, na1)
+									group2 = '%s %s %s' %(peak.resonances()[1].group.symbol, resi2, na1)
 								if NOESY_Spectrum.nuclei[0] != '1H':
 									noe_atoms.append([group2,resn2+na1])
 									Freq_dict[resn2+na1] = peak.frequency[0]

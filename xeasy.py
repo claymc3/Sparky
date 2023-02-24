@@ -21,7 +21,7 @@ import os
 # St Jude Children's Research Hospital 
 # Department of Structural Biology Memphis, TN 
 #
-# Last updates: February 22, 2023
+# Last updates: February 24, 2023
 #
 # Update added the ability of filter the resonances list to detect entries that are:
 #   Not in sequence 
@@ -204,7 +204,7 @@ class xeasy_format_dialog(tkutil.Dialog, tkutil.Stoppable):
       self.session.show_resonance_peak_list(r)
       
   # ---------------------------------------------------------------------------
-  # Update the bad chemcials shifts check box with resoancnes peaks for bad entries 
+  # Update the bad chemical shifts check box with resonances peaks for bad entries 
   def bad_resonance_cb(self, event):
     
     r2 = self.bad_shift_list.event_line_data(event)
@@ -273,16 +273,17 @@ class xeasy_format_dialog(tkutil.Dialog, tkutil.Stoppable):
     self.stoppable_loop('shifts', 100)
     for r in reslist:
       self.check_for_stop()
-      if r.group.name[0] in Allowed_atoms.keys():
-         if r.atom.name not in Allowed_atoms[r.group.symbol]:
-            line = self.bad_shift_line(r) + ' atom name';
-            self.bad_shift_list.append(line, r)
-      if r.deviation >= tolerance[r.atom.nucleus[-1]]:
-        line = self.bad_shift_line(r) + ' deviation';
-        self.bad_shift_list.append(line, r)
-      if r.group.name not in groups_list:
-        line = self.bad_shift_line(r)  + ' group name';
-        self.bad_shift_list.append(line, r)
+      if r.group.number != None:
+        if r.group.name[0] in Allowed_atoms.keys():
+           if r.atom.name not in Allowed_atoms[r.group.symbol]:
+              line = self.bad_shift_line(r) + ' atom name';
+              self.bad_shift_list.append(line, r)
+        if r.deviation >= tolerance[r.atom.nucleus[-1]]:
+          line = self.bad_shift_line(r) + ' deviation';
+          self.bad_shift_list.append(line, r)
+        if r.group.name not in groups_list:
+          line = self.bad_shift_line(r)  + ' group name';
+          self.bad_shift_list.append(line, r)
 
   # ---------------------------------------------------------------------------
   #

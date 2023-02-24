@@ -192,28 +192,27 @@ class assignment_distance_dialog(tkutil.Dialog, tkutil.Stoppable):
 		self.lf = Tkinter.LabelFrame(self.top, text = 'NOESY Settings')
 		self.lf.pack(fill=Tkinter.X, pady=5, padx=5)
 		noesyframe = Tkinter.Frame(self.lf)
-		l1 = Tkinter.Label(noesyframe, text = '2D Editing:  ')
-		l2 = Tkinter.Label(noesyframe, text = '     NOESY:  ')
-		l1.grid(row = 2, column = 0)
-		l2.grid(row = 3, column = 0)
-
 		spectrum = spectrum_menu_3D(self.session,noesyframe, 'Spectrum: ')
 		spectrum.frame.grid(row =0, column = 0, sticky = Tkinter.W, columnspan = 4)
 		distance =  tkutil.entry_field(noesyframe, 'Distance Cutoff: ', '5', 5)
 		max_dist = distance.variable
 		distance.frame.grid(row = 1, column = 0, columnspan = 2)
 		diagonal = tkutil.checkbutton2(noesyframe,'With Diagonal', 0,1,2)
-		edim_nh = tkutil.checkbutton2(noesyframe, 'HN',  0,2,1)
-		edim_ali = tkutil.checkbutton2(noesyframe, 'Ail/Me',  0,2,2)
-		edim_aro = tkutil.checkbutton2(noesyframe, 'Aromatic', 0,2,3)
-		edim_other = tkutil.checkbutton2(noesyframe,  'Other',  0,2,4)
-		edim_other2 = tkutil.checkbutton2(noesyframe,  'Other',  0,2,5)
+		l1 = Tkinter.Label(noesyframe, text = '2D Editing:  ')
+		l1.grid(row = 2, column = 0)
+		SpecOps = ['HN', 'Ali/Me','Aromatic','Other','Other2']
+		ref_spectrum = Tkinter.StringVar(noesyframe)
+		ref_spectrum.set(SpecOps[0])
+		SpecOp = Tkinter.OptionMenu(noesyframe, ref_spectrum, *SpecOps)
+		SpecOp.grid(row = 2, column = 1)
+		l2 = Tkinter.Label(noesyframe, text = 'NOESY:  ')
+		l2.grid(row = 3, column = 0)
 		noe_nh = tkutil.checkbutton2(noesyframe,  'HN',  0,3,1)
 		noe_ali = tkutil.checkbutton2(noesyframe,  'Ail/Me', 0,3,2)
 		noe_aro = tkutil.checkbutton2(noesyframe, 'Aromatic', 0,3,3)
 		noe_other = tkutil.checkbutton2(noesyframe, 'Other', 0,3,4)
 		noe_other2 = tkutil.checkbutton2(noesyframe, 'Other2', 0,3,5)
-		NOESY_Specs.append((spectrum, max_dist, diagonal ,edim_nh ,edim_ali ,edim_aro, edim_other, edim_other2, noe_nh, noe_ali,noe_aro, noe_other,noe_other2))
+		NOESY_Specs.append((spectrum, max_dist, diagonal, ref_spectrum,noe_nh, noe_ali,noe_aro, noe_other,noe_other2))
 		noesyframe.pack(pady=5, padx = 5)
 
 	# ------------------------------------------------------------------------------
@@ -264,14 +263,14 @@ class assignment_distance_dialog(tkutil.Dialog, tkutil.Stoppable):
 		if s.heavyatoms == True:
 			protonated = False
 
-		for (spectrum, max_dist, diagonal ,edim_nh ,edim_ali ,edim_aro, edim_other, edim_other2, noe_nh, noe_ali,noe_aro, noe_other,noe_other2) in NOESY_Specs:
+		for (spectrum, max_dist, diagonal ,ref_spec, noe_nh, noe_ali, noe_aro, noe_other, noe_other2) in NOESY_Specs:
 			NOESY_Spectrum = spectrum.spectrum()
 			ref_spectrum, noe_spectra = '', []
-			if edim_nh.state(): ref_spectrum = s.HN_spectrum
-			if edim_ali.state(): ref_spectrum = s.Ali_spectrum
-			if edim_aro.state(): ref_spectrum = s.Aro_spectrum
-			if edim_other.state(): ref_spectrum = s.Other_spectrum
-			if edim_other2.state(): ref_spectrum = s.Other_spectrum2
+			if ref_spec.get() == 'HN':ref_spectrum = s.HN_spectrum
+			if ref_spec.get() == 'Ali/Me':ref_spectrum = s.Ali_spectrum
+			if ref_spec.get() == 'Aromatic':ref_spectrum = s.Aro_spectrum
+			if ref_spec.get() == 'Other':ref_spectrum = s.Other_spectrum
+			if ref_spec.get() == 'Other2':ref_spectrum = s.Other_spectrum2
 			if noe_nh.state(): noe_spectra.append(s.HN_spectrum)
 			if noe_ali.state(): noe_spectra.append(s.Ali_spectrum)
 			if noe_aro.state(): noe_spectra.append(s.Aro_spectrum)

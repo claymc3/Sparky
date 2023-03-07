@@ -1,5 +1,5 @@
 from tkinter import *
-import tkinter
+import Tkinter as tkinter
 import types
 import re
 import math as m
@@ -17,7 +17,7 @@ from numpy import median
 # St Jude Children's Research Hospital 
 # Department of Structural Biology Memphis, TN 
 #
-# Last updates: February 21, 2023
+# Last updates: February 24, 2023
 #
 #
 # ------------------------------------------------------------------------------
@@ -136,7 +136,7 @@ class assignment_distance_dialog(tkutil.Dialog, tkutil.Stoppable):
 		self.selection_notice = None
 		tkutil.Dialog.__init__(self, session.tk, 'Simulate NOESY from UPL')
 
-		explain = ('(last edits Febraury 21, 2023)\n')
+		explain = ('(last edits Febraury 24, 2023)\n')
 		w = tkinter.Label(self.top, text = explain, justify = 'left')
 		w.pack(side = 'top', anchor = 'w')
 
@@ -179,7 +179,7 @@ class assignment_distance_dialog(tkutil.Dialog, tkutil.Stoppable):
 		self.note_words = ef
 		et = tkinter.Label(self.top, text = '(comma separated list of words)\n')
 		et.pack(side = 'top', anchor = 'w')
-		et = tkinter.Label(self.top, text = 'note = tag upl [ ]; spec [ ]\n tag:\n   spec - upl > 0.5 bad; spec - upl <= 0.5 long\n   spec - upl < -0.5 good; spec - upl > -0.5 short\n\n upl [ ] =  value from input upl\n spec [ ] = distance calculated from peak intensity\n',justify = 'left')
+		et = tkinter.Label(self.top, text = 'note = tag upl [ ]; obs [ ]\n tags:\n   obs - upl > 0.5 bad abs(obs - upl) <= 0.5 check\n   obs - upl < -0.5 good\n\n upl =  value from input upl\n obs = distance calculated from peak intensity\n',justify = 'left')
 		et.pack(side = 'top', anchor = 'w')
 
 		progress_label = tkinter.Label(self.top, anchor = 'nw')
@@ -369,27 +369,27 @@ class assignment_distance_dialog(tkutil.Dialog, tkutil.Stoppable):
 			else: 
 				obsD = (Calcnst/abs(peak_height))**(1.0/6.0)
 				if SNR > 10:
-					peak.note = '    upl {:} ;spec {:3.2f}'.format(peak.note,obsD)
+					peak.note = ' upl {:} ;obs {:3.2f}'.format(peak.note,obsD)
 					if obsD - upl > 0.0:
 						if obsD - upl <= 0.5:
-							peak.color = 'darkorange'
+							peak.color = 'DarkOrange'
 							peak.label.color = peak.color
-							peak.note = '     long {:}'.format(peak.note)
+							peak.note = '{:>8} {:}'.format('check',peak.note)
 						if obsD - upl > 0.5:
 							peak.color = 'red'
 							peak.label.color = peak.color
-							peak.note = '      bad {:}'.format(peak.note)
+							peak.note = '{:>8} {:}'.format('bad',peak.note)
 					if obsD - upl < 0.0: 
 						if abs(obsD - upl) <= 0.5:
 							peak.color = 'gold'
 							peak.label.color = peak.color
-							peak.note = '    short {:}'.format(peak.note)
+							peak.note = '{:>8} {:}'.format('check',peak.note)
 						if abs(obsD - upl) > 0.5:
-							peak.color = 'darkgreen'
+							peak.color = 'DarkGreen'
 							peak.label.color = peak.color
-							peak.note = '    good {:}'.format(peak.note)
+							peak.note = '{:>8} {:}'.format('good',peak.note)
 				if SNR <= 10:
-					peak.color = 'darkred'
+					peak.color = 'DarkRed'
 					peak.label.color = peak.color
 					peak.note = '    missing: SNR < 10'
 

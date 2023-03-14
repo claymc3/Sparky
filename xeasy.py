@@ -32,26 +32,26 @@ import os
 #
 
 Allowed_atoms = {
-'A': ['?','H','HA','HB','C','CA','CB','N','QB'],
- 'C': ['?','H','HA','HB2','HB3','QB','HG','C','CA','CB','N'],
- 'D': ['?','H','HA','HB2','HB3','QB','HD2','C','CA','CB','CG','N'],
- 'E': ['?','H','HA','HB2','HB3','QB','HE2','HG2','HG3','QG','C','CA','CB','CD','CG','N'],
- 'F': ['?','H','HA','HB2','HB3','QB','HD1','HD2','QD','HE1','HE2','QE','HZ','C','CA','CB','CD1','CD2','CE1','CE2','CG','CZ','N'],
- 'G': ['?','H','HA2','HA3','C','CA','N'],
- 'H': ['?','H','HA','HB2','HB3','QB','QB','HD1','HD2','QD','HE1','HE2','QE','C','CA','CB','CD2','CE1','CG','N','ND1','NE2'],
- 'I': ['?','H','HA','HB','HG12','HG13','QG1','HD1','QD1','HG2','QG2','C','CA','CB','CD1','CG1','CG2','N'],
- 'K': ['?','H','HA','HB2','HB3','QB','HD2','HD3','QD','HE2','HE3','QE','HG2','HG3','QG','C','CA','CB','CD','CE','CG','N','NZ','QZ','HZ'],
- 'L': ['?','H','HA','HB2','HB3','QB','HG','HD1','QD1','HD2','QD2','C','CA','CB','CD1','CD2','CG','N'],
- 'M': ['?','H','HA','HB2','HB3','QB','HG2','HG3','QG','HE','QE','C','CA','CB','CE','CG','N'],
- 'N': ['?','H','HA','HB2','HB3','QB','HD21','HD22','QD','C','CA','CB','CG','N','ND2'],
- 'P': ['?','HA','HB2','HB3','QB','HD2','HD3','QD','HG2','HG3','QG','C','CA','CB','CD','CG','N'],
- 'Q': ['?','H','HA','HB2','HB3','QB','HE21','HE22','QE2','HG2','HG3','QG','C','CA','CB','CD','CG','N','NE2'],
- 'R': ['?','H','HA','HB2','HB3','QB','HD2','HD3','QD','HG2','HG3','QG','HH11','HH12','QH1','HH21','HH22','QH2','C','CA','CB','CD','CG','CZ','N','NE','NH1','NH2','HE'],
- 'S': ['?','H','HA','HB2','HB3','QB','HG','C','CA','CB','N'],
- 'T': ['?','H','HA','HB','HG1','HG2','QG2','C','CA','CB','CG2','N'],
- 'V': ['?','H','HA','HB','HG1','QG1','HG2','QG2','C','CA','CB','CG1','CG2','N'],
- 'W': ['?','H','HA','HB2','HB3','QB','HD1','HE1','HE3','HH2','HZ2','HZ3','C','CA','CB','CD1','CD2','CE2','CE3','CG','CH2','CZ2','CZ3','N','NE1'],
- 'Y': ['?','H','HA','HB2','HB3','QB','HD1','HD2','QD','HE1','HE2','QE',  'HH','C','CA','CB','CD1','CD2','CE1','CE2','CG','CZ','N']}
+'A': ['H','HA','HB','C','CA','CB','N','QB'],
+ 'C': ['H','HA','HB2','HB3','QB','HG','C','CA','CB','N'],
+ 'D': ['H','HA','HB2','HB3','QB','HD2','C','CA','CB','CG','N'],
+ 'E': ['H','HA','HB2','HB3','QB','HE2','HG2','HG3','QG','C','CA','CB','CD','CG','N'],
+ 'F': ['H','HA','HB2','HB3','QB','HD1','HD2','QD','HE1','HE2','QE','HZ','C','CA','CB','CD1','CD2','CE1','CE2','CG','CZ','N'],
+ 'G': ['H','HA2','HA3','C','CA','N'],
+ 'H': ['H','HA','HB2','HB3','QB','QB','HD1','HD2','QD','HE1','HE2','QE','C','CA','CB','CD2','CE1','CG','N','ND1','NE2'],
+ 'I': ['H','HA','HB','HG12','HG13','QG1','HD1','QD1','HG2','QG2','C','CA','CB','CD1','CG1','CG2','N'],
+ 'K': ['H','HA','HB2','HB3','QB','HD2','HD3','QD','HE2','HE3','QE','HG2','HG3','QG','C','CA','CB','CD','CE','CG','N','NZ','QZ','HZ'],
+ 'L': ['H','HA','HB2','HB3','QB','HG','HD1','QD1','HD2','QD2','C','CA','CB','CD1','CD2','CG','N'],
+ 'M': ['H','HA','HB2','HB3','QB','HG2','HG3','QG','HE','QE','C','CA','CB','CE','CG','N'],
+ 'N': ['H','HA','HB2','HB3','QB','HD21','HD22','QD','C','CA','CB','CG','N','ND2'],
+ 'P': ['HA','HB2','HB3','QB','HD2','HD3','QD','HG2','HG3','QG','C','CA','CB','CD','CG','N'],
+ 'Q': ['H','HA','HB2','HB3','QB','HE21','HE22','QE2','HG2','HG3','QG','C','CA','CB','CD','CG','N','NE2'],
+ 'R': ['H','HA','HB2','HB3','QB','HD2','HD3','QD','HG2','HG3','QG','HH11','HH12','QH1','HH21','HH22','QH2','C','CA','CB','CD','CG','CZ','N','NE','NH1','NH2','HE'],
+ 'S': ['H','HA','HB2','HB3','QB','HG','C','CA','CB','N'],
+ 'T': ['H','HA','HB','HG1','HG2','QG2','C','CA','CB','CG2','N'],
+ 'V': ['H','HA','HB','HG1','QG1','HG2','QG2','C','CA','CB','CG1','CG2','N'],
+ 'W': ['H','HA','HB2','HB3','QB','HD1','HE1','HE3','HH2','HZ2','HZ3','C','CA','CB','CD1','CD2','CE2','CE3','CG','CH2','CZ2','CZ3','N','NE1'],
+ 'Y': ['H','HA','HB2','HB3','QB','HD1','HD2','QD','HE1','HE2','QE',  'HH','C','CA','CB','CD1','CD2','CE1','CE2','CG','CZ','N']}
 
 
 

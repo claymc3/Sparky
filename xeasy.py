@@ -77,6 +77,7 @@ class xeasy_format_dialog(tkutil.Dialog, tkutil.Stoppable):
     molcon = tk.Label(self.top, text ='Molecule / Condition : ', justify = 'left')
     molcon.pack(side = 'top', anchor = 'w')
     self.molcon = molcon
+    self.molcon.config(text='Molecule / Condition : {:} / {:}'.format(self.session.selected_spectrum().condition.molecule.name,self.session.selected_spectrum().condition.name))
 
     sl = tkutil.scrolling_list(self.top, 'Chemical Shift List', 5)
     sl.frame.pack(fill = 'both', expand = 1)
@@ -357,6 +358,15 @@ class xeasy_format_dialog(tkutil.Dialog, tkutil.Stoppable):
 
     if header[-1] != str(spectrum.dimension):
       pseudo4D = True
+
+    ### Check for peaks with singal to noise less than 2 and remove
+    self.session.unselect_all_ornaments()
+    cutoff = 2.0 * spectrum.noise
+    self.stoppable_loop('peaks', 100)
+    for peak in spectrum_peak_list:
+      if sputil.peak_height(peak) <= cutoff:
+        peak.selected = 1
+    self.session.command_characters("")
 
     peak_id = 0
     self.stoppable_loop('peaks', 100)

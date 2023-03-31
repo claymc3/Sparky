@@ -15,7 +15,7 @@ import tkMessageBox
 # St Jude Children's Research Hospital 
 # Department of Structural Biology Memphis, TN 
 #
-# Last updates: January 26, 2023
+# Last updates: February 24, 2023
 #
 #
 # ------------------------------------------------------------------------------
@@ -154,6 +154,13 @@ class assignment_distance_dialog(tkutil.Dialog, tkutil.Stoppable):
 		self.model_number = mn.variable
 		mn.frame.pack(side = 'top', anchor = 'w')
 
+		explain = ('Condition to set in save files (default: sim):')
+		w = Tkinter.Label(self.top, text = explain, justify = 'left')
+		w.pack(side = 'top', anchor = 'w')
+		cn_nam = tkutil.entry_field(self.top, 'Condition: ', 'sim', 10)
+		self.cond_name = cn_nam.variable
+		cn_nam.frame.pack(side = 'top', anchor = 'w')
+
 	## Reference Spectra Containing NOESY Assignments 
 		w = Tkinter.Label(self.top, text = 'Select 2D Spectra Containing Assignments', justify = 'left')
 		w.pack(side = 'top', anchor = 'w')
@@ -231,9 +238,8 @@ class assignment_distance_dialog(tkutil.Dialog, tkutil.Stoppable):
 		settings.chains = self.chains.get().replace(',','')
 		settings.mnum = self.model_number.get()
 		settings.heavyatoms = self.heavyatoms.state()
-		print settings.HN_spectrum.name
-		print settings.Ali_spectrum.name
-		print settings.Aro_spectrum.name
+		settings.condition_name = self.cond_name.get()
+
 		return settings
 
 	# ------------------------------------------------------------------------------
@@ -250,10 +256,12 @@ class assignment_distance_dialog(tkutil.Dialog, tkutil.Stoppable):
 	def Generate_NOESY_cb(self):
 
 		s = self.get_settings()
+		if s.condition_name == "":
+			s.condition_name = "sim"
+
+		## Unselect any selected peaks in the project as these will be deleted
 		self.session.unselect_all_ornaments()
-		for peak in self.session.selected_peaks():
-			if peak.label: peak.label.selected = 0
-			peak.selected = 0
+
 		### Figure out if PDB is protonated
 		protonated = False
 		for line in open(s.pdb_path).readlines():
@@ -330,35 +338,34 @@ class assignment_distance_dialog(tkutil.Dialog, tkutil.Stoppable):
 			spectrum_ref_name=NOESY_Spectrum.name
 			proj_spec_names = [spectrum.name for spectrum in self.session.project.spectrum_list()]
 
-			if spectrum_ref_name+'_sim' in proj_spec_names:
-				print('Found spectrum in project list')
-				spectrum = sputil.name_to_spectrum(spectrum_ref_name+'_sim', self.session)
-				for peak in spectrum .peak_list():
+			if spectrum_ref_name+'_'+s.condition_name in proj_spec_names:
+				spectrum = sputil.name_to_spectrum(spectrum_ref_name+'_'+s.condition_name, self.session)
+				for peak in spectrum.peak_list():
 					peak.selected = 1
 				self.session.command_characters("")
 
-			if spectrum_ref_name+'_sim' not in proj_spec_names:
-				save_path_new = str(NOESY_Spectrum.save_path+'SIM')
+			if spectrum_ref_name+'_'+s.condition_name not in proj_spec_names:
+				save_path_new = str(NOESY_Spectrum.save_path+s.condition_name)
 				save_new = open(save_path_new, 'w')
 				save_content = open(NOESY_Spectrum.save_path, 'r')
 				if 'condition' in open(NOESY_Spectrum.save_path).read():
 					for line in save_content.readlines():
-						line = line.replace('name ' + NOESY_Spectrum.name ,'name '+ NOESY_Spectrum.name + '_sim')
+						line = line.replace('name ' + NOESY_Spectrum.name ,'name '+ NOESY_Spectrum.name + '_' + s.condition_name)
 						if 'condition' in line:
-							line = 'condition sim\n'
+							line = 'condition ' + s.condition_name + '\n'
 						if (line=='<end view>\n'): break
 						save_new.write(line)
 				if 'condition' not in open(NOESY_Spectrum.save_path).read():
 					for line in save_content.readlines():
 						if 'name ' + NOESY_Spectrum.name in line:
-							line = 'condition sim\n' + line.replace('name ' + NOESY_Spectrum.name ,'name '+ NOESY_Spectrum.name + '_sim')
+							line = 'condition ' + s.condition_name + '\n' + line.replace('name ' + NOESY_Spectrum.name ,'name '+ NOESY_Spectrum.name + '_' + s.condition_name)
 						if (line=='<end view>\n'): break
 						save_new.write(line)
 				save_new.write('<end view>\n<ornament>\n<end ornament>\n<end spectrum>\n')
 				save_new.close()
 				self.session.open_spectrum(save_path_new)
 
-			out_spectrum = sputil.name_to_spectrum(spectrum_ref_name+'_sim', self.session)
+			out_spectrum = sputil.name_to_spectrum(spectrum_ref_name +'_' + s.condition_name, self.session)
 			noe_peak_list = self.distances(s.pdb_path, pyutil.string_to_float(max_dist.get()), s.chains, s.mnum, diagonal.state(), s.mono, editing_atoms, noe_atoms)
 			for (tassignment,w1,w2,w3,d) in noe_peak_list:
 				assignment = sputil.parse_assignment(tassignment)

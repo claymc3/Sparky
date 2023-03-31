@@ -10,13 +10,14 @@
 #
 import string
 import re
-import Tkinter
+import tkinter
 import pyutil
 import sparky
 import sputil
 import cyana
 import tkutil
 import os
+import tkinter.messagebox
 import tkMessageBox 
 # -----------------------------------------------------------------------------
 #
@@ -65,17 +66,17 @@ class read_cyana_peaks_dialog(tkutil.Dialog, tkutil.Stoppable):
 		plp.frame.pack(side = 'top', anchor = 'e')
 		self.peak_list_path = plp
 
-		nl = tkutil.file_field2(self.top, 'Cyana upl: ', 'upl', file_type=[('cyana upl file', '.upl')], default_ext='.upl')
-		nl.frame.pack(side = 'top', anchor = 'w')
-		self.fupl_path = nl
-
-		cc = tkutil.file_field2(self.top, 'Cyana CACL file: ', 'cya', file_type=[('cyana CALC file', '.cya')], default_ext='.cya')
-		cc.frame.pack(side = 'top', anchor = 'w')
-		self.CALC_path = cc
-
 		prt = tkutil.file_field2(self.top, 'Cyana prot file: ', 'prot', file_type=[('cyana prot file', '.prot')], default_ext='.prot')
 		prt.frame.pack(side = 'top', anchor = 'w')
 		self.prot_path = prt
+
+		explain = ('Condition to set in save files (def: cyana):')
+		w = tkinter.Label(self.top, text = explain, justify = 'left')
+		w.pack(side = 'top', anchor = 'w')
+
+		cn_nam = tkutil.entry_field(self.top, 'Condition: ', 'CYANA', 12)
+		self.cond_name = cn_nam.variable
+		cn_nam.frame.pack(side = 'top', anchor = 'w')
 
 		order=('xy','yx','xyz','xzy','yxz','yzx','zxy','zyx')
 		initial=order[2]
@@ -86,7 +87,7 @@ class read_cyana_peaks_dialog(tkutil.Dialog, tkutil.Stoppable):
 		sc.frame.pack(side = 'top', anchor = 'w')
 		self.spectrum_choice = sc
 
-		progress_label = Tkinter.Label(self.top, anchor = 'nw')
+		progress_label = tkinter.Label(self.top, anchor = 'nw')
 		progress_label.pack(side = 'top', anchor = 'w')
 
 		br = tkutil.button_row(self.top,
@@ -104,58 +105,58 @@ class read_cyana_peaks_dialog(tkutil.Dialog, tkutil.Stoppable):
 	#
 	def read_cb(self):
 
-		calc = self.CALC_path.get()
-		fpath = calc.replace(calc.split('/')[-1], '')
+		condition_name = self.cond_name.get()
 		fin = self.peak_list_path.get()
+		fpath = fin.replace(fin.split('/')[-1], '')
 		fprot = self.prot_path.get()
 		seq_dict = self.fseq
-		fupl = self.fupl_path.get()
+		calc = os.path.join(fpath, 'CALC.cya')
+		fupl = os.path.join(fpath, 'final.upl')
 		fovw = fupl.replace('.upl','.ovw')
 		spectrum = self.spectrum_choice.spectrum()
 		order = self.order.get()
 		self.order.get()
 		if fin and seq_dict and spectrum:
-			self.stoppable_call(self.read_peaks, fin, fprot, seq_dict, fupl, fovw, calc, spectrum, order)
+			self.stoppable_call(self.read_peaks, fin, fprot, seq_dict, fupl, fovw, calc, spectrum, order, condition_name)
 			message = ('Transfered %d peaks\n Last run %s' % (self.count, self.time))
 			self.progress_report(message)
 
 	# ---------------------------------------------------------------------------
 	#
-	
-	def read_peaks(self, fin, fprot, seq_dict, fupl, fovw, calc, spectrum, order):
+
+	def read_peaks(self, fin, fprot, seq_dict, fupl, fovw, calc, spectrum, order, condition_name):
 
 		inspec = spectrum 
-		save_path_new = str(spectrum.save_path+'CYANA')
+		save_path_new = str(spectrum.save_path+condition_name)
 		save_new = open(save_path_new, 'w')
 		save_content = open(spectrum.save_path, 'r')
 		proj_spec_names = [spec.name for spec in self.session.project.spectrum_list()]
-		if inspec.name + '_cyana' in proj_spec_names:
-			for peak in self.session.selected_peaks():
-				peak.selected = 0
-			cyaspectrum = sputil.name_to_spectrum(inspec.name+'_cyana', self.session)
+		self.session.unselect_all_ornaments()
+		if inspec.name + '_' + condition_name in proj_spec_names:
+			cyaspectrum = sputil.name_to_spectrum(inspec.name+ '_' + condition_name, self.session)
 			for peak in cyaspectrum .peak_list():
 				peak.selected = 1
 			self.session.command_characters("")
-		if inspec.name + '_cyana' not in proj_spec_names:
+		if inspec.name + '_' + condition_name not in proj_spec_names:
 			if 'condition' in open(inspec.save_path).read():
 				for line in save_content.readlines():
 					if 'name ' + inspec.name in line:
-						line = line.replace('name ' + inspec.name ,'name '+ inspec.name + '_cyana')
+						line = line.replace('name ' + inspec.name ,'name '+ inspec.name + '_' + condition_name)
 					if 'condition' in line:
-						line = line.replace('\n',' cyana\n')
+						line = line.replace('\n',condition_name + '\n')
 					if (line=='<end view>\n'): break
 					save_new.write(line)
 			if 'condition' not in open(inspec.save_path).read():
 				for line in save_content.readlines():
 					if 'name ' + inspec.name in line:
-						line = 'condition cyana\n' + line.replace('name ' + inspec.name ,'name '+ inspec.name + '_cyana')
+						line = 'condition ' + condition_name + '\n' + line.replace('name ' + inspec.name ,'name '+ inspec.name + '_' + condition_name)
 					if (line=='<end view>\n'): break
 					save_new.write(line)
 			save_new.write('<end view>\n<ornament>\n<end ornament>\n<end spectrum>\n')
 			save_new.close()
 			self.session.open_spectrum(save_path_new)
 		
-		cyaspectrum = sputil.name_to_spectrum(inspec.name+'_cyana', self.session)
+		cyaspectrum = sputil.name_to_spectrum(inspec.name + '_' + condition_name, self.session)
 		CYANAplist = self.cyana_peak_list(fin, fprot, seq_dict, cyaspectrum, self.get_dist(calc, fupl, fin), self.get_viols(calc, fovw, fin), order)
 		self.count = 0 
 		for (assignment, frequency, note, pcolor, lcolor) in CYANAplist:

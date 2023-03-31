@@ -1,12 +1,13 @@
-import Tkinter
+import tkinter
 import types
 import re
 import math as m
 import pyutil
-import sparky
+import sparky 
 import sputil
 import tkutil
-import tkMessageBox
+import tkinter.messagebox
+
 
 # ------------------------------------------------------------------------------
 #
@@ -130,39 +131,39 @@ class assignment_distance_dialog(tkutil.Dialog, tkutil.Stoppable):
 		tkutil.Dialog.__init__(self, session.tk, 'Simulate 3D NOESY from PDB')
 
 		explain = ('(last edits February 24, 2023)\n')
-		w = Tkinter.Label(self.top, text = explain, justify = 'left')
+		w = tkinter.Label(self.top, text = explain, justify = 'left')
 		w.pack(side = 'top', anchor = 'w')
 
 		explain = ('PDB does NOT need H, H treated with sum r-6')
-		w = Tkinter.Label(self.top, text = explain, justify = 'left')
+		w = tkinter.Label(self.top, text = explain, justify = 'left')
 		w.pack(side = 'top', anchor = 'w')        
 		ep = tkutil.file_field2(self.top, 'PDB file', 'Browse...', file_type=[('Protein Data Bank File', '.pdb')], default_ext='.pdb')
 		self.pdb_path = ep.variable
 		ep.frame.pack(side = 'top', anchor = 'w')
 
 		explain = ('Specify which chain(s) should be used,limit 2')
-		w = Tkinter.Label(self.top, text = explain, justify = 'left')
+		w = tkinter.Label(self.top, text = explain, justify = 'left')
 		w.pack(side = 'top', anchor = 'w')
 		ch = tkutil.entry_field(self.top, 'Use Chain(s): ', 'A', 5)
 		self.chains = ch.variable
 		ch.frame.pack(side = 'top', anchor = 'w')
 
 		explain = ('Specify which model number should be used,limit 1')
-		w = Tkinter.Label(self.top, text = explain, justify = 'left')
+		w = tkinter.Label(self.top, text = explain, justify = 'left')
 		w.pack(side = 'top', anchor = 'w')
 		mn = tkutil.entry_field(self.top, 'Use Model: ', '', 5)
 		self.model_number = mn.variable
 		mn.frame.pack(side = 'top', anchor = 'w')
 
 		explain = ('Condition to set in save files (default: sim):')
-		w = Tkinter.Label(self.top, text = explain, justify = 'left')
+		w = tkinter.Label(self.top, text = explain, justify = 'left')
 		w.pack(side = 'top', anchor = 'w')
 		cn_nam = tkutil.entry_field(self.top, 'Condition: ', 'sim', 10)
 		self.cond_name = cn_nam.variable
 		cn_nam.frame.pack(side = 'top', anchor = 'w')
 
 	## Reference Spectra Containing NOESY Assignments 
-		w = Tkinter.Label(self.top, text = 'Select 2D Spectra Containing Assignments', justify = 'left')
+		w = tkinter.Label(self.top, text = 'Select 2D Spectra Containing Assignments', justify = 'left')
 		w.pack(side = 'top', anchor = 'w')
 		self.HN_spectrum = spectrum_menu_2D(session, self.top, 'HN: ')
 		self.HN_spectrum.frame.pack(side = 'top', anchor = 'w',pady = 2)
@@ -181,7 +182,7 @@ class assignment_distance_dialog(tkutil.Dialog, tkutil.Stoppable):
 		ha = tkutil.checkbutton(self.top, 'Use Heavy Atoms', 0)
 		ha.button.pack(side = 'top', anchor = 'w')
 		self.heavyatoms = ha
-		progress_label = Tkinter.Label(self.top, anchor = 'nw')
+		progress_label = tkinter.Label(self.top, anchor = 'nw')
 		progress_label.pack(side = 'top', anchor = 'w',padx=2)
 
 		br = tkutil.button_row(self.top,
@@ -196,23 +197,23 @@ class assignment_distance_dialog(tkutil.Dialog, tkutil.Stoppable):
 	# ------------------------------------------------------------------------------
 	# 
 	def add_NOESY(self):
-		self.lf = Tkinter.LabelFrame(self.top, text = 'NOESY Settings')
-		self.lf.pack(fill=Tkinter.X, pady=5, padx=5)
-		noesyframe = Tkinter.Frame(self.lf)
+		self.lf = tkinter.LabelFrame(self.top, text = 'NOESY Settings')
+		self.lf.pack(fill=tkinter.X, pady=5, padx=5)
+		noesyframe = tkinter.Frame(self.lf)
 		spectrum = spectrum_menu_3D(self.session,noesyframe, 'Spectrum: ')
-		spectrum.frame.grid(row =0, column = 0, sticky = Tkinter.W, columnspan = 4)
+		spectrum.frame.grid(row =0, column = 0, sticky = tkinter.W, columnspan = 4)
 		distance =  tkutil.entry_field(noesyframe, 'Distance Cutoff: ', '5', 5)
 		max_dist = distance.variable
 		distance.frame.grid(row = 1, column = 0, columnspan = 2)
 		diagonal = tkutil.checkbutton2(noesyframe,'With Diagonal', 0,1,2)
-		l1 = Tkinter.Label(noesyframe, text = '2D Editing:  ')
+		l1 = tkinter.Label(noesyframe, text = '2D Editing:  ')
 		l1.grid(row = 2, column = 0)
 		SpecOps = ['HN', 'Ali/Me','Aromatic','Other','Other2']
-		ref_spectrum = Tkinter.StringVar(noesyframe)
+		ref_spectrum = tkinter.StringVar(noesyframe)
 		ref_spectrum.set(SpecOps[0])
-		SpecOp = Tkinter.OptionMenu(noesyframe, ref_spectrum, *SpecOps)
+		SpecOp = tkinter.OptionMenu(noesyframe, ref_spectrum, *SpecOps)
 		SpecOp.grid(row = 2, column = 1)
-		l2 = Tkinter.Label(noesyframe, text = 'NOESY:  ')
+		l2 = tkinter.Label(noesyframe, text = 'NOESY:  ')
 		l2.grid(row = 3, column = 0)
 		noe_nh = tkutil.checkbutton2(noesyframe,  'HN',  0,3,1)
 		noe_ali = tkutil.checkbutton2(noesyframe,  'Ail/Me', 0,3,2)
@@ -487,7 +488,7 @@ class assignment_distance_dialog(tkutil.Dialog, tkutil.Stoppable):
 						PDBdict[group]=[float(line[30:38].strip()),float(line[38:46].strip()),float(line[46:54].strip())]
 						resids.append(AAA_dict[line[17:20].strip()]+str(int(line[22:26].strip()) + 1000))
 		if len(PDBdict) < 2:
-			tkMessageBox.showinfo('Input Error', "No PDB entries found \n Check input selections try again")
+			tkinter.messagebox.showinfo('Input Error', "No PDB entries found \n Check input selections try again")
 			return
 		NOESY3D_peaklist = []
 		for (atom1,noew2,noew3) in editing_atoms:
@@ -503,7 +504,7 @@ class assignment_distance_dialog(tkutil.Dialog, tkutil.Stoppable):
 					if d <= Cutoff:
 						NOESY3D_peaklist.append([noew1+"-"+noew2+"-"+noew3, noew1, noew2, noew3, d])
 		if len(NOESY3D_peaklist) < 2:
-			tkMessageBox.showinfo('Input Error', "No NOESY entries generated \n Check input selections and try again")
+			tkinter.messagebox.showinfo('Input Error', "No NOESY entries generated \n Check input selections and try again")
 			return
 		if diagonal == True:
 			for (atom1,noew2,noew3) in editing_atoms:

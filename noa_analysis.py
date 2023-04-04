@@ -15,7 +15,7 @@ import tkinter.messagebox
 # St Jude Children's Research Hospital 
 # Department of Structural Biology Memphis, TN 
 #
-# Last updates: March 31, 2023
+# Last updates: Arpil 4, 2023
 #
 #
 # ------------------------------------------------------------------------------
@@ -43,7 +43,7 @@ class check_peaks_dialog(tkutil.Dialog):
 
     pl = sputil.peak_listbox(self.top)
     pl.frame.pack(fill = 'both', expand = 1)
-    pl.heading['text'] = 'Peak list\n{:}  {:^26}  {:^24}  {:^4}  {:^9}  {:^6}  {:^24}   {:^24}'.format('Peak #','Frequencies','Connection','UPL', 'Range','Pshift','Comment','Note')
+    pl.heading['text'] = 'Peak list\n{:}  {:^26}  {:^24}  {:^4}  {:^10}  {:^6}  {:^24}   {:^24}'.format('Peak #','Frequencies','Connection','UPL', 'Range','Pshift','Comment','Note')
     pl.listbox.bind('<ButtonRelease-1>', pl.select_peak_cb)
     pl.listbox.bind('<Double-ButtonRelease-1>', pl.goto_peak_cb)
     pl.listbox.bind('<ButtonRelease-3>', pl.goto_peak_cb)

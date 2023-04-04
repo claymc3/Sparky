@@ -43,7 +43,7 @@ class check_peaks_dialog(tkutil.Dialog):
 
     pl = sputil.peak_listbox(self.top)
     pl.frame.pack(fill = 'both', expand = 1)
-    pl.heading['text'] = 'Peak list\n{:}  {:^26}  {:^24}  {:^9}  {:^6}  {:^24}   {:^24}'.format('peakid','frequencies','Connection','Dist' ,'Pshift','Comment','Note')
+    pl.heading['text'] = 'Peak list\n{:}  {:^26}  {:^24}  {:^4}  {:^9}  {:^6}  {:^24}   {:^24}'.format('Peak #','Frequencies','Connection','UPL', 'Range','Pshift','Comment','Note')
     pl.listbox.bind('<ButtonRelease-1>', pl.select_peak_cb)
     pl.listbox.bind('<Double-ButtonRelease-1>', pl.goto_peak_cb)
     pl.listbox.bind('<ButtonRelease-3>', pl.goto_peak_cb)
@@ -59,7 +59,7 @@ class check_peaks_dialog(tkutil.Dialog):
     self.color_choice = tkutil.option_menu(self.top, "color", colors, initial)
     self.color_choice.frame.pack(side = 'top', anchor = 'w')
 
-    sortopts = ['peak number','w1','w2','w3','connection','dist','pshift','comment']
+    sortopts = ['peak number','w1','w2','w3','connection','UPL','pshift','comment']
     initial2=sortopts[0]
     self.sort_by = tkutil.option_menu(self.top, "Sort By:", sortopts, initial2)
     self.sort_by.frame.pack(side = 'top', anchor = 'w')
@@ -71,8 +71,12 @@ class check_peaks_dialog(tkutil.Dialog):
     self.keyword.set('')
     keyword_ef = tkinter.Entry(searchframe, textvariable = self.keyword, width = 10)
     keyword_ef.grid(column = 1, row = 0)
+    count = tkinter.Label(searchframe, text ='', justify = 'left')
+    count.grid(column = 2, row = 0)
+    self.count = count
     searchframe.pack(side = 'top', anchor = 'w')
     keyword_ef.bind('<Return>', self.cb_search)
+    keyword_ef.bind('<KP_Enter>', self.cb_search)
 
     br = tkutil.button_row(self.top,
                           ('Update List', self.update_list_cb),
@@ -136,20 +140,22 @@ class check_peaks_dialog(tkutil.Dialog):
       peakdict["{:8.3f}, {:8.3f}, {:8.3f}".format(peak.frequency[0],peak.frequency[1],peak.frequency[2])] = peak
 
     sort_dict = {'peak number':'lambda x: float(x.strip().split()[0])','w1':'lambda x: float(x.strip().split()[1])','w2':'lambda x: float(x.strip().split()[2])',
-      'w3':'lambda x: float(x.strip().split()[3])','connection':'lambda x: x.strip().split()[4]','dist':'lambda x: x.strip().split()[5]',
-      'pshift':'lambda x: float(x.strip().split()[6])', 'comment':'lambda x: x[79:]'}
+      'w3':'lambda x: float(x.strip().split()[3])','connection':'lambda x: x.strip().split()[4]','UPL':'lambda x: x.strip().split()[5]',
+      'pshift':'lambda x: float(x.strip().split()[7])', 'comment':'lambda x: x[86:]'}
     noalist = sorted(inlist, key = eval(sort_dict[sort_by]))
 
     idx = -1
+    count = 0
     for line in noalist:
       freq = "{:8.3f}, {:8.3f}, {:8.3f}".format(float(line.split()[1]),float(line.split()[2]),float(line.split()[3]))
       if freq in peakdict.keys():
         idx+=1
+        count+=1
         peak = peakdict[freq]
         outline = '{:<105} {:}'.format(line.rstrip(),peak.note)
         self.peak_list.append(outline, peak)
         self.peak_list.listbox.itemconfig(idx,{'fg':peak.color.replace('white','black')})
-
+    self.count.config(text='{:}'.format(count))
 
 def show_dialog(session):
 

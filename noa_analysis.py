@@ -43,7 +43,7 @@ class check_peaks_dialog(tkutil.Dialog):
 
     pl = sputil.peak_listbox(self.top)
     pl.frame.pack(fill = 'both', expand = 1)
-    pl.heading['text'] = 'Peak list\n{:}  {:^26}  {:^24}  {:^4}  {:^10}  {:^6}  {:^24}   {:^24}'.format('Peak #','Frequencies','Connection','UPL', 'Range','Pshift','Comment','Note')
+    pl.heading['text'] = 'Peak list\n {:}  {:^26}  {:^24}  {:^4}  {:^10}  {:^6}  {:^24}   {:^24}'.format('Peak #','Frequencies','Connection','UPL', 'Range','Pshift','Comment','Note')
     pl.listbox.bind('<ButtonRelease-1>', pl.select_peak_cb)
     pl.listbox.bind('<Double-ButtonRelease-1>', pl.goto_peak_cb)
     pl.listbox.bind('<ButtonRelease-3>', pl.goto_peak_cb)
@@ -152,7 +152,7 @@ class check_peaks_dialog(tkutil.Dialog):
         idx+=1
         count+=1
         peak = peakdict[freq]
-        outline = '{:<105} {:}'.format(line.rstrip(),peak.note)
+        outline = '{:<115} {:}'.format(line.rstrip(),peak.note)
         self.peak_list.append(outline, peak)
         self.peak_list.listbox.itemconfig(idx,{'fg':peak.color.replace('white','black')})
     self.count.config(text='{:}'.format(count))

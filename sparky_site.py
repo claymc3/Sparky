@@ -69,6 +69,9 @@ def nmrfam_menu_entries():
     ('cp', 'Run Ponderosa Client',                      ('nmrfam', 'run_ponderosa_client')),
     ('up', 'Ponderosa Connector',                       ('connect_ponderosa', 'connect_ponderosa_analyzer')),
     ('gd', 'Generate Distance Constraints and White Lists for PONDEROSA', ('upl_lol', 'generate_upl_lol')),
+    ('SN', 'PDB2NOE',                   ('pdb2noe','show_dialog')),
+    ('un', 'UPL2NOE',                   ('upl2noe','show_dialog')),
+    ('NA', 'CYANA NOA Analysis',       ('noa_analysis','show_dialog')),
     ('cy', 'Cyana2Sparky format',       ('readcyana','read_cyana_peak_list')),
     ('CY', 'Cyana2Sparky format colors',       ('mcc_readcyana','read_cyana_peak_list')),
     ('xe', 'XEASY, DYANA format',       ('xeasy','show_dialog')),
@@ -206,8 +209,6 @@ def standard_menu_entries():
     ('ad', 'Assignment distances',      ('distance','show_dialog')),
     ('MA', 'MAGIC-Act',                 ('MAGIC_Act','show_dialog')),
     ('MV', 'MAGIC-View',                ('MAGIC_View','show_dialog')),
-    ('SN', 'PDB2NOE',                   ('pdb2noe','show_dialog')),
-    ('un', 'UPL2NOE',                   ('upl2noe','show_dialog')),
     ('aa', 'AutoAssign',                ('autoassign','show_dialog')),
     ('cs', 'Chemical shift plot',       ('chemshift','show_shifts_dialog')),
     ('bm', 'Load BMRB STAR file',       ('bmrbstar', 'show_dialog')),   # From Chad Rienstra

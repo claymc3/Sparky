@@ -116,7 +116,7 @@ class check_peaks_dialog(tkutil.Dialog):
       peak.note = note_words
       peak.color = color
     for idx in self.peak_list.listbox.curselection():
-      self.peak_list.listbox.itemconfig(idx,{'fg':color.replace('white','black')})
+      self.peak_list.listbox.itemconfig(idx,{'fg':color.replace('white','black'), 'selectforeground':color.replace('white','black')})
 
   # ---------------------------------------------------------------------------
   #
@@ -154,7 +154,7 @@ class check_peaks_dialog(tkutil.Dialog):
         peak = peakdict[freq]
         outline = '{:<115} {:}'.format(line.rstrip(),peak.note)
         self.peak_list.append(outline, peak)
-        self.peak_list.listbox.itemconfig(idx,{'fg':peak.color.replace('white','black')})
+        self.peak_list.listbox.itemconfig(idx,{'fg':peak.color.replace('white','black'), 'selectforeground':peak.color.replace('white','black')})
     self.count.config(text='{:}'.format(count))
 
 def show_dialog(session):
